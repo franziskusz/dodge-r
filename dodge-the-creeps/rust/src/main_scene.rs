@@ -74,36 +74,42 @@ impl Main {
 
     #[func]
     fn on_mob_timer_timeout(&mut self) {
-        let mut mob_spawn_location = self
-            .base()
-            .get_node_as::<PathFollow2D>("MobPath/MobSpawnLocation");
+        let mut i = 0;
 
-        let mut mob_scene = self.mob_scene.instantiate_as::<RigidBody2D>();
+        while i < 10 {
+            let mut mob_spawn_location = self
+                .base()
+                .get_node_as::<PathFollow2D>("MobPath/MobSpawnLocation");
 
-        let mut rng = rand::thread_rng();
-        let progress = rng.gen_range(u32::MIN..u32::MAX);
+            let mut mob_scene = self.mob_scene.instantiate_as::<RigidBody2D>();
 
-        mob_spawn_location.set_progress(progress as f32);
-        mob_scene.set_position(mob_spawn_location.get_position());
+            let mut rng = rand::thread_rng();
+            let progress = rng.gen_range(u32::MIN..u32::MAX);
 
-        let mut direction = mob_spawn_location.get_rotation() + PI / 2.0;
-        direction += rng.gen_range(-PI / 4.0..PI / 4.0);
+            mob_spawn_location.set_progress(progress as f32);
+            mob_scene.set_position(mob_spawn_location.get_position());
 
-        mob_scene.set_rotation(direction);
+            let mut direction = mob_spawn_location.get_rotation() + PI / 2.0;
+            direction += rng.gen_range(-PI / 4.0..PI / 4.0);
 
-        self.base_mut().add_child(mob_scene.clone().upcast());
+            mob_scene.set_rotation(direction);
 
-        let mut mob = mob_scene.cast::<mob::Mob>();
-        let range = {
-            // Local scope to bind `mob` user object
-            let mob = mob.bind();
-            rng.gen_range(mob.min_speed..mob.max_speed)
-        };
+            self.base_mut().add_child(mob_scene.clone().upcast());
 
-        mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
+            let mut mob = mob_scene.cast::<mob::Mob>();
+            let range = {
+                // Local scope to bind `mob` user object
+                let mob = mob.bind();
+                rng.gen_range(mob.min_speed..mob.max_speed)
+            };
 
-        let mut hud = self.base().get_node_as::<Hud>("Hud");
-        hud.connect("start_game".into(), mob.callable("on_start_game"));
+            mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
+
+            let mut hud = self.base().get_node_as::<Hud>("Hud");
+            hud.connect("start_game".into(), mob.callable("on_start_game"));
+
+            i = i + 1;
+        }
     }
 
     fn music(&mut self) -> &mut AudioStreamPlayer {
