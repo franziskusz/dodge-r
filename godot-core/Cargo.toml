@@ -1,0 +1,39 @@
+[package]
+name = "godot-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+license = "MPL-2.0"
+keywords = ["gamedev", "godot", "engine", "2d", "3d"] # possibly: "ffi"
+categories = ["game-engines", "graphics"]
+
+[features]
+default = []
+codegen-fmt = ["godot-ffi/codegen-fmt", "godot-codegen/codegen-fmt"]
+codegen-full = ["godot-codegen/codegen-full"]
+codegen-lazy-fptrs = [
+    "godot-ffi/codegen-lazy-fptrs",
+    "godot-codegen/codegen-lazy-fptrs",
+]
+custom-godot = ["godot-ffi/custom-godot", "godot-codegen/custom-godot"]
+double-precision = ["godot-codegen/double-precision"]
+experimental-godot-api = ["godot-codegen/experimental-godot-api"]
+experimental-threads = []
+trace = ["godot-ffi/trace"]
+
+[dependencies]
+godot-ffi = { path = "../godot-ffi" }
+
+# See https://docs.rs/glam/latest/glam/index.html#feature-gates
+glam = { version = "0.23", features = ["debug-glam-assert"] }
+serde = { version = "1", features = ["derive"], optional = true }
+godot-cell = { path = "../godot-cell" }
+
+# Reverse dev dependencies so doctests can use `godot::` prefix
+[dev-dependencies]
+godot = { path = "../godot" }
+serde_json = { version = "1.0" }
+
+[build-dependencies]
+godot-bindings = { path = "../godot-bindings" }
+godot-codegen = { path = "../godot-codegen" }

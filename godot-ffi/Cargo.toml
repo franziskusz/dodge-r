@@ -1,0 +1,28 @@
+[package]
+name = "godot-ffi"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+license = "MPL-2.0"
+keywords = ["gamedev", "godot", "engine", "ffi"]
+categories = ["game-engines", "graphics"]
+
+[features]
+custom-godot = ["godot-bindings/custom-godot"]
+codegen-fmt = ["godot-codegen/codegen-fmt"]
+codegen-lazy-fptrs = ["godot-codegen/codegen-lazy-fptrs"]
+experimental-godot-api = ["godot-codegen/experimental-godot-api"]
+trace = []
+
+# TODO: get rid of paste and gensym, they are trivially implementable with proc-macros. Update cargo-deny.
+# Especially gensym which pulls in entire syn for 10 LoC. See https://github.com/regiontog/gensym/blob/master/src/lib.rs.
+# Might however require godot-ffi to depend on godot-macro, which is not ideal...
+[dependencies]
+paste = "1"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+gensym = "0.1.1"
+
+[build-dependencies]
+godot-bindings = { path = "../godot-bindings" }
+godot-codegen = { path = "../godot-codegen" }

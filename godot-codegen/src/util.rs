@@ -1,0 +1,1122 @@
+/*
+ * Copyright (c) godot-rust; Bromeon and contributors.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use crate::api_parser::{
+    BuiltinClassMethod, Class, ClassConstant, ClassMethod, ConstValue, Enum, UtilityFunction,
+};
+use crate::special_cases::is_builtin_type_scalar;
+use crate::{Context, GodotTy, ModName, RustTy, TyName};
+
+use proc_macro2::{Ident, Literal, TokenStream};
+use quote::{format_ident, quote, ToTokens};
+
+use std::fmt;
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct NativeStructuresField {
+    pub field_type: String,
+    pub field_name: String,
+}
+
+/// At which stage a class function pointer is loaded.
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub enum ClassCodegenLevel {
+    Servers,
+    Scene,
+    Editor,
+}
+
+impl ClassCodegenLevel {
+    pub fn with_tables() -> [Self; 3] {
+        [Self::Servers, Self::Scene, Self::Editor]
+    }
+
+    pub fn table_global_getter(self) -> Ident {
+        format_ident!("class_{}_api", self.lower())
+    }
+
+    pub fn table_file(self) -> String {
+        format!("table_{}_classes.rs", self.lower())
+    }
+
+    pub fn table_struct(self) -> Ident {
+        format_ident!("Class{}MethodTable", self.upper())
+    }
+
+    pub fn lower(self) -> &'static str {
+        match self {
+            Self::Servers => "servers",
+            Self::Scene => "scene",
+            Self::Editor => "editor",
+        }
+    }
+
+    fn upper(self) -> &'static str {
+        match self {
+            Self::Servers => "Servers",
+            Self::Scene => "Scene",
+            Self::Editor => "Editor",
+        }
+    }
+
+    pub fn to_init_level(self) -> TokenStream {
+        match self {
+            Self::Servers => quote! { crate::init::InitLevel::Servers },
+            Self::Scene => quote! { crate::init::InitLevel::Scene },
+            Self::Editor => quote! { crate::init::InitLevel::Editor },
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+
+/// Lookup key for indexed method tables.
+// Could potentially save a lot of string allocations with lifetimes.
+// See also crate::lazy_keys.
+#[derive(Eq, PartialEq, Hash)]
+pub(crate) enum MethodTableKey {
+    ClassMethod {
+        api_level: ClassCodegenLevel,
+        class_ty: TyName,
+        method_name: String,
+    },
+    BuiltinMethod {
+        builtin_ty: TyName,
+        method_name: String,
+    },
+    /*BuiltinLifecycleMethod {
+        builtin_ty: TyName,
+        method_name: String,
+    },
+    UtilityFunction {
+        function_name: String,
+    },*/
+}
+
+impl MethodTableKey {
+    /// Maps the method table key to a "category", meaning a distinct method table.
+    ///
+    /// Categories have independent address spaces for indices, meaning they begin again at 0 for each new category.
+    pub fn category(&self) -> String {
+        match self {
+            MethodTableKey::ClassMethod { api_level, .. } => format!("class.{}", api_level.lower()),
+            MethodTableKey::BuiltinMethod { .. } => "builtin".to_string(),
+            // MethodTableKey::BuiltinLifecycleMethod { .. } => "builtin.lifecycle".to_string(),
+            // MethodTableKey::UtilityFunction { .. } => "utility".to_string(),
+        }
+    }
+}
+
+impl fmt::Debug for MethodTableKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MethodTableKey::ClassMethod {
+                api_level: _,
+                class_ty: class_name,
+                method_name,
+            } => write!(f, "ClassMethod({}.{})", class_name.godot_ty, method_name),
+            MethodTableKey::BuiltinMethod {
+                builtin_ty: variant_type,
+                method_name,
+            } => write!(
+                f,
+                "BuiltinMethod({}.{})",
+                variant_type.godot_ty, method_name
+            ),
+            /*MethodTableKey::BuiltinLifecycleMethod {
+                builtin_ty: variant_type,
+                method_name,
+            } => write!(
+                f,
+                "BuiltinLifecycleMethod({}.{})",
+                variant_type.godot_ty, method_name
+            ),
+            MethodTableKey::UtilityFunction { function_name } => {
+                write!(f, "UtilityFunction({})", function_name)
+            }*/
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+
+/// Small utility that turns an optional vector (often encountered as JSON deserialization type) into a slice.
+pub(crate) fn option_as_slice<T>(option: &Option<Vec<T>>) -> &[T] {
+    option.as_ref().map_or(&[], Vec::as_slice)
+}
+
+pub(crate) fn make_imports() -> TokenStream {
+    quote! {
+        use godot_ffi as sys;
+        use crate::builtin::*;
+        use crate::builtin::meta::{ClassName, PtrcallReturnUnit, PtrcallReturnT, PtrcallReturnOptionGdT, PtrcallSignatureTuple, VarcallSignatureTuple};
+        use crate::engine::native::*;
+        use crate::engine::Object;
+        use crate::obj::Gd;
+        use crate::sys::GodotFfi as _;
+    }
+}
+
+// Use &ClassMethod instead of &str, to make sure it's the original Godot name and no rename.
+pub(crate) fn make_class_method_ptr_name(class_ty: &TyName, method: &ClassMethod) -> Ident {
+    format_ident!("{}__{}", to_snake_case(&class_ty.godot_ty), method.name)
+}
+
+pub(crate) fn make_builtin_method_ptr_name(
+    builtin_ty: &TyName,
+    method: &BuiltinClassMethod,
+) -> Ident {
+    format_ident!("{}__{}", to_snake_case(&builtin_ty.godot_ty), method.name)
+}
+
+pub(crate) fn make_utility_function_ptr_name(function: &UtilityFunction) -> Ident {
+    safe_ident(&function.name)
+}
+
+#[cfg(since_api = "4.2")]
+pub fn make_string_name(identifier: &str) -> TokenStream {
+    let lit = proc_macro2::Literal::byte_string(format!("{identifier}\0").as_bytes());
+    quote! {
+        StringName::from_latin1_with_nul(#lit)
+    }
+}
+
+#[cfg(before_api = "4.2")]
+pub fn make_string_name(identifier: &str) -> TokenStream {
+    quote! {
+        StringName::from(#identifier)
+    }
+}
+pub fn make_sname_ptr(identifier: &str) -> TokenStream {
+    quote! {
+        string_names.fetch(#identifier)
+    }
+}
+
+pub fn get_api_level(class: &Class) -> ClassCodegenLevel {
+    // Work around wrong classification in https://github.com/godotengine/godot/issues/86206.
+    fn override_editor(class_name: &str) -> bool {
+        cfg!(before_api = "4.3")
+            && matches!(
+                class_name,
+                "ResourceImporterOggVorbis" | "ResourceImporterMP3"
+            )
+    }
+
+    if class.name.ends_with("Server") {
+        ClassCodegenLevel::Servers
+    } else if class.api_type == "editor" || override_editor(&class.name) {
+        ClassCodegenLevel::Editor
+    } else if class.api_type == "core" {
+        ClassCodegenLevel::Scene
+    } else {
+        panic!(
+            "class {} has unknown API type {}",
+            class.name, class.api_type
+        )
+    }
+}
+
+pub fn make_enum_definition(enum_: &Enum) -> TokenStream {
+    // TODO enums which have unique ords could be represented as Rust enums
+    // This would allow exhaustive matches (or at least auto-completed matches + #[non_exhaustive]). But even without #[non_exhaustive],
+    // this might be a forward compatibility hazard, if Godot deprecates enumerators and adds new ones with existing ords.
+
+    let enum_name = ident(&enum_.name);
+
+    let values = &enum_.values;
+    let mut enumerators = Vec::with_capacity(values.len());
+
+    // This is only used for enum ords (i32), not bitfield flags (u64).
+    let mut unique_ords = Vec::with_capacity(values.len());
+
+    for enumerator in values {
+        let name = make_enumerator_name(&enumerator.name, &enum_.name);
+        let ordinal_lit = if enum_.is_bitfield {
+            let bitfield_ord: u64 = enumerator.to_bitfield_ord();
+            make_bitfield_flag_ord(bitfield_ord)
+        } else {
+            let enum_ord: i32 = enumerator.to_enum_ord();
+            unique_ords.push(enum_ord);
+            make_enumerator_ord(enum_ord)
+        };
+
+        enumerators.push(quote! {
+            pub const #name: Self = Self { ord: #ordinal_lit };
+        });
+    }
+
+    let mut derives = vec!["Copy", "Clone", "Eq", "PartialEq", "Hash", "Debug"];
+
+    if enum_.is_bitfield {
+        derives.push("Default");
+    }
+
+    let derives = derives.into_iter().map(ident);
+
+    let index_enum_impl = if enum_.is_bitfield {
+        // Bitfields don't implement IndexEnum.
+        TokenStream::new()
+    } else {
+        // Enums implement IndexEnum only if they are "index-like" (see docs).
+        if let Some(enum_max) = try_count_index_enum(enum_) {
+            quote! {
+                impl crate::obj::IndexEnum for #enum_name {
+                    const ENUMERATOR_COUNT: usize = #enum_max;
+                }
+            }
+        } else {
+            TokenStream::new()
+        }
+    };
+
+    let bitfield_ops;
+    let self_as_trait;
+    let engine_impl;
+    let enum_ord_type;
+
+    if enum_.is_bitfield {
+        bitfield_ops = quote! {
+            // impl #enum_name {
+            //     pub const UNSET: Self = Self { ord: 0 };
+            // }
+            impl std::ops::BitOr for #enum_name {
+                type Output = Self;
+
+                fn bitor(self, rhs: Self) -> Self::Output {
+                    Self { ord: self.ord | rhs.ord }
+                }
+            }
+        };
+        enum_ord_type = quote! { u64 };
+        self_as_trait = quote! { <Self as crate::obj::EngineBitfield> };
+        engine_impl = quote! {
+            impl crate::obj::EngineBitfield for #enum_name {
+                fn try_from_ord(ord: u64) -> Option<Self> {
+                    Some(Self { ord })
+                }
+
+                fn ord(self) -> u64 {
+                    self.ord
+                }
+            }
+        };
+    } else {
+        // Ordinals are not necessarily in order.
+        unique_ords.sort();
+        unique_ords.dedup();
+
+        bitfield_ops = TokenStream::new();
+        enum_ord_type = quote! { i32 };
+        self_as_trait = quote! { <Self as crate::obj::EngineEnum> };
+        engine_impl = quote! {
+            impl crate::obj::EngineEnum for #enum_name {
+                fn try_from_ord(ord: i32) -> Option<Self> {
+                    match ord {
+                        #( ord @ #unique_ords )|* => Some(Self { ord }),
+                        _ => None,
+                    }
+                }
+
+                fn ord(self) -> i32 {
+                    self.ord
+                }
+            }
+        };
+    };
+
+    // Enumerator ordinal stored as i32, since that's enough to hold all current values and the default repr in C++.
+    // Public interface is i64 though, for consistency (and possibly forward compatibility?).
+    // Bitfield ordinals are stored as u64. See also: https://github.com/godotengine/godot-cpp/pull/1320
+    quote! {
+        #[repr(transparent)]
+        #[derive(#( #derives ),*)]
+        pub struct #enum_name {
+            ord: #enum_ord_type
+        }
+        impl #enum_name {
+            #(
+                #enumerators
+            )*
+        }
+
+        #engine_impl
+        #index_enum_impl
+        #bitfield_ops
+
+        impl crate::builtin::meta::GodotConvert for #enum_name {
+            type Via = #enum_ord_type;
+        }
+
+        impl crate::builtin::meta::ToGodot for #enum_name {
+            fn to_godot(&self) -> Self::Via {
+                #self_as_trait::ord(*self)
+            }
+        }
+
+        impl crate::builtin::meta::FromGodot for #enum_name {
+            fn try_from_godot(via: Self::Via) -> std::result::Result<Self, crate::builtin::meta::ConvertError> {
+                #self_as_trait::try_from_ord(via)
+                    .ok_or_else(|| crate::builtin::meta::FromGodotError::InvalidEnum.into_error(via))
+            }
+        }
+    }
+}
+
+pub fn make_constant_definition(constant: &ClassConstant) -> TokenStream {
+    let name = ident(&constant.name);
+    let vis = if constant.name.starts_with("NOTIFICATION_") {
+        quote! { pub(crate) }
+    } else {
+        quote! { pub }
+    };
+
+    match constant.to_constant() {
+        ConstValue::I32(value) => quote! { #vis const #name: i32 = #value; },
+        ConstValue::I64(value) => quote! { #vis const #name: i64 = #value; },
+    }
+}
+
+/// Tries to interpret the constant as a notification one, and transforms it to a Rust identifier on success.
+pub fn try_to_notification(constant: &ClassConstant) -> Option<Ident> {
+    constant
+        .name
+        .strip_prefix("NOTIFICATION_")
+        .map(|s| ident(&shout_to_pascal(s)))
+}
+
+fn make_enum_name(enum_name: &str) -> Ident {
+    // TODO clean up enum name
+
+    ident(enum_name)
+}
+
+fn make_enumerator_name(enumerator_name: &str, _enum_name: &str) -> Ident {
+    // TODO strip prefixes of `enum_name` appearing in `enumerator_name`
+    // tons of variantions, see test cases in lib.rs
+
+    ident(enumerator_name)
+}
+
+/// If an enum qualifies as "indexable" (can be used as array index), returns the number of possible values.
+///
+/// See `godot::obj::IndexEnum` for what constitutes "indexable".
+fn try_count_index_enum(enum_: &Enum) -> Option<usize> {
+    if enum_.is_bitfield || enum_.values.is_empty() {
+        return None;
+    }
+
+    // Sort by ordinal value. Allocates for every enum in the JSON, but should be OK (most enums are indexable).
+    let enumerators = {
+        let mut enumerators = enum_.values.clone();
+        enumerators.sort_by_key(|v| v.value);
+        enumerators
+    };
+
+    // Highest ordinal must be the "MAX" one.
+    // The presence of "MAX" indicates that Godot devs intended the enum to be used as an index.
+    // The condition is not strictly necessary and could theoretically be relaxed; there would need to be concrete use cases though.
+    let last = enumerators.last().unwrap(); // safe because of is_empty check above.
+    if !last.name.ends_with("_MAX") {
+        return None;
+    }
+
+    // The rest of the enumerators must be contiguous and without gaps (duplicates are OK).
+    let mut last_value = 0;
+    for enumerator in enumerators.iter() {
+        if last_value != enumerator.value && last_value + 1 != enumerator.value {
+            return None;
+        }
+
+        last_value = enumerator.value;
+    }
+
+    Some(last.value as usize)
+}
+
+pub fn to_snake_case(class_name: &str) -> String {
+    use heck::ToSnakeCase;
+
+    // Special cases
+    match class_name {
+        "JSONRPC" => return "json_rpc".to_string(),
+        "OpenXRAPIExtension" => return "open_xr_api_extension".to_string(),
+        "OpenXRIPBinding" => return "open_xr_ip_binding".to_string(),
+        _ => {}
+    }
+
+    class_name
+        .replace("2D", "_2d")
+        .replace("3D", "_3d")
+        .replace("GDNative", "Gdnative")
+        .replace("GDExtension", "Gdextension")
+        .to_snake_case()
+}
+
+pub fn to_pascal_case(class_name: &str) -> String {
+    use heck::ToPascalCase;
+
+    // Special cases: reuse snake_case impl to ensure at least consistency between those 2.
+    match class_name {
+        "JSONRPC" | "OpenXRAPIExtension" | "OpenXRIPBinding" => {
+            return to_snake_case(class_name).to_pascal_case()
+        }
+        _ => {}
+    }
+
+    class_name
+        .to_pascal_case()
+        .replace("GdExtension", "GDExtension")
+        .replace("GdNative", "GDNative")
+}
+
+pub fn shout_to_pascal(shout_case: &str) -> String {
+    // TODO use heck?
+
+    let mut result = String::with_capacity(shout_case.len());
+    let mut next_upper = true;
+
+    for ch in shout_case.chars() {
+        if next_upper {
+            assert_ne!(ch, '_'); // no double underscore
+            result.push(ch); // unchanged
+            next_upper = false;
+        } else if ch == '_' {
+            next_upper = true;
+        } else {
+            result.push(ch.to_ascii_lowercase());
+        }
+    }
+
+    result
+}
+
+pub fn ident(s: &str) -> Ident {
+    format_ident!("{}", s)
+}
+
+pub fn cstr_u8_slice(string: &str) -> Literal {
+    Literal::byte_string(format!("{string}\0").as_bytes())
+}
+
+#[rustfmt::skip]
+pub fn safe_ident(s: &str) -> Ident {
+    // See also: https://doc.rust-lang.org/reference/keywords.html
+    match s {
+        // Lexer
+        | "as" | "break" | "const" | "continue" | "crate" | "else" | "enum" | "extern" | "false" | "fn" | "for" | "if"
+        | "impl" | "in" | "let" | "loop" | "match" | "mod" | "move" | "mut" | "pub" | "ref" | "return" | "self" | "Self"
+        | "static" | "struct" | "super" | "trait" | "true" | "type" | "unsafe" | "use" | "where" | "while"
+
+        // Lexer 2018+
+        | "async" | "await" | "dyn"
+
+        // Reserved
+        | "abstract" | "become" | "box" | "do" | "final" | "macro" | "override" | "priv" | "typeof" | "unsized" | "virtual" | "yield"
+
+        // Reserved 2018+
+        | "try"
+           => format_ident!("{}_", s),
+
+         _ => ident(s)
+    }
+}
+
+/// Converts a potential "meta" type (like u32) to its canonical type (like i64).
+///
+/// Avoids dragging along the meta type through [`RustTy::BuiltinIdent`].
+pub(crate) fn unmap_meta(rust_ty: &RustTy) -> Option<Ident> {
+    let RustTy::BuiltinIdent(rust_ty) = rust_ty else {
+        return None;
+    };
+
+    // Don't use match because it needs allocation (unless == is repeated)
+    // Even though i64 and f64 can have a meta of the same type, there's no need to return that here, as there won't be any conversion.
+
+    for ty in ["u64", "u32", "u16", "u8", "i32", "i16", "i8"] {
+        if rust_ty == ty {
+            return Some(ident("i64"));
+        }
+    }
+
+    if rust_ty == "f32" {
+        return Some(ident("f64"));
+    }
+
+    None
+}
+
+fn to_hardcoded_rust_ident(full_ty: &GodotTy) -> Option<&str> {
+    let ty = full_ty.ty.as_str();
+    let meta = full_ty.meta.as_deref();
+
+    let result = match (ty, meta) {
+        // Integers
+        ("int", Some("int64") | None) => "i64",
+        ("int", Some("int32")) => "i32",
+        ("int", Some("int16")) => "i16",
+        ("int", Some("int8")) => "i8",
+        ("int", Some("uint64")) => "u64",
+        ("int", Some("uint32")) => "u32",
+        ("int", Some("uint16")) => "u16",
+        ("int", Some("uint8")) => "u8",
+        ("int", Some(meta)) => panic!("unhandled type int with meta {meta:?}"),
+
+        // Floats (with single precision builds)
+        ("float", Some("double") | None) => "f64",
+        ("float", Some("float")) => "f32",
+        ("float", Some(meta)) => panic!("unhandled type float with meta {meta:?}"),
+
+        // Doubles (with double precision builds)
+        ("double", None) => "f64",
+        ("double", Some(meta)) => panic!("unhandled type double with meta {meta:?}"),
+
+        // Others
+        ("bool", None) => "bool",
+        ("String", None) => "GString",
+        ("Array", None) => "VariantArray",
+
+        // Types needed for native structures mapping
+        ("uint8_t", None) => "u8",
+        ("uint16_t", None) => "u16",
+        ("uint32_t", None) => "u32",
+        ("uint64_t", None) => "u64",
+        ("int8_t", None) => "i8",
+        ("int16_t", None) => "i16",
+        ("int32_t", None) => "i32",
+        ("int64_t", None) => "i64",
+        ("real_t", None) => "real",
+        ("void", None) => "c_void",
+
+        (ty, Some(meta)) => panic!("unhandled type {ty:?} with meta {meta:?}"),
+
+        _ => return None,
+    };
+
+    Some(result)
+}
+
+fn to_hardcoded_rust_enum(ty: &str) -> Option<&str> {
+    let result = match ty {
+        //"enum::Error" => "GodotError",
+        "enum::Variant.Type" => "VariantType",
+        "enum::Variant.Operator" => "VariantOperator",
+        "enum::Vector3.Axis" => "Vector3Axis",
+        _ => return None,
+    };
+    Some(result)
+}
+
+/// Maps an input type to a Godot type with the same C representation. This is subtly different than [`to_rust_type`],
+/// which maps to an appropriate corresponding Rust type. This function should be used in situations where the C ABI for
+/// a type must match the Godot equivalent exactly, such as when dealing with pointers.
+pub(crate) fn to_rust_type_abi(ty: &str, ctx: &mut Context) -> RustTy {
+    match ty {
+        "int" => RustTy::BuiltinIdent(ident("i32")),
+        "float" => RustTy::BuiltinIdent(ident("f32")),
+        "double" => RustTy::BuiltinIdent(ident("f64")),
+        _ => to_rust_type(ty, None, ctx),
+    }
+}
+
+/// Maps an _input_ type from the Godot JSON to the corresponding Rust type (wrapping some sort of a token stream).
+///
+/// Uses an internal cache (via `ctx`), as several types are ubiquitous.
+// TODO take TyName as input
+pub(crate) fn to_rust_type<'a>(ty: &'a str, meta: Option<&'a String>, ctx: &mut Context) -> RustTy {
+    let full_ty = GodotTy {
+        ty: ty.to_string(),
+        meta: meta.cloned(),
+    };
+
+    // Separate find + insert slightly slower, but much easier with lifetimes
+    // The insert path will be hit less often and thus doesn't matter
+    if let Some(rust_ty) = ctx.find_rust_type(&full_ty) {
+        rust_ty.clone()
+    } else {
+        let rust_ty = to_rust_type_uncached(&full_ty, ctx);
+        ctx.insert_rust_type(full_ty, rust_ty.clone());
+        rust_ty
+    }
+}
+
+fn to_rust_type_uncached(full_ty: &GodotTy, ctx: &mut Context) -> RustTy {
+    let ty = full_ty.ty.as_str();
+
+    /// Transforms a Godot class/builtin/enum IDENT (without `::` or other syntax) to a Rust one
+    fn rustify_ty(ty: &str) -> Ident {
+        if is_builtin_type_scalar(ty) {
+            ident(ty)
+        } else {
+            TyName::from_godot(ty).rust_ty
+        }
+    }
+
+    if ty.ends_with('*') {
+        // Pointer type; strip '*', see if const, and then resolve the inner type.
+        let mut ty = ty[0..ty.len() - 1].to_string();
+
+        // 'const' should apply to the innermost pointer, if present.
+        let is_const = ty.starts_with("const ") && !ty.ends_with('*');
+        if is_const {
+            ty = ty.replace("const ", "");
+        }
+
+        // .trim() is necessary here, as Godot places a space between a type and the stars when representing a double pointer.
+        // Example: "int*" but "int **".
+        let inner_type = to_rust_type(ty.trim(), None, ctx);
+        return RustTy::RawPointer {
+            inner: Box::new(inner_type),
+            is_const,
+        };
+    }
+
+    // Only place where meta is relevant is here.
+    if let Some(hardcoded) = to_hardcoded_rust_ident(full_ty) {
+        return RustTy::BuiltinIdent(ident(hardcoded));
+    }
+
+    if let Some(hardcoded) = to_hardcoded_rust_enum(ty) {
+        return RustTy::EngineEnum {
+            tokens: ident(hardcoded).to_token_stream(),
+            surrounding_class: None, // would need class passed in
+        };
+    }
+
+    if let Some(bitfield) = ty.strip_prefix("bitfield::") {
+        return if let Some((class, enum_)) = bitfield.split_once('.') {
+            // Class-local bitfield.
+            let module = ModName::from_godot(class);
+            let bitfield_ty = make_enum_name(enum_);
+
+            RustTy::EngineBitfield {
+                tokens: quote! { crate::engine::#module::#bitfield_ty},
+                surrounding_class: Some(class.to_string()),
+            }
+        } else {
+            // Global bitfield.
+            let bitfield_ty = make_enum_name(bitfield);
+
+            RustTy::EngineBitfield {
+                tokens: quote! { crate::engine::global::#bitfield_ty },
+                surrounding_class: None,
+            }
+        };
+    }
+
+    if let Some(qualified_enum) = ty.strip_prefix("enum::") {
+        return if let Some((class, enum_)) = qualified_enum.split_once('.') {
+            // Class-local enum
+            let module = ModName::from_godot(class);
+            let enum_ty = make_enum_name(enum_);
+
+            RustTy::EngineEnum {
+                tokens: quote! { crate::engine::#module::#enum_ty },
+                surrounding_class: Some(class.to_string()),
+            }
+        } else {
+            // Global enum
+            let enum_ty = make_enum_name(qualified_enum);
+
+            RustTy::EngineEnum {
+                tokens: quote! { crate::engine::global::#enum_ty },
+                surrounding_class: None,
+            }
+        };
+    } else if let Some(packed_arr_ty) = ty.strip_prefix("Packed") {
+        // Don't trigger on PackedScene ;P
+        if packed_arr_ty.ends_with("Array") {
+            return RustTy::BuiltinIdent(rustify_ty(ty));
+        }
+    } else if let Some(elem_ty) = ty.strip_prefix("typedarray::") {
+        let rust_elem_ty = to_rust_type(elem_ty, None, ctx);
+        return if ctx.is_builtin(elem_ty) {
+            RustTy::BuiltinArray(quote! { Array<#rust_elem_ty> })
+        } else {
+            RustTy::EngineArray {
+                tokens: quote! { Array<#rust_elem_ty> },
+                elem_class: elem_ty.to_string(),
+            }
+        };
+    }
+
+    // Note: do not check if it's a known engine class, because that will not work in minimal mode (since not all classes are stored)
+    if ctx.is_builtin(ty) || ctx.is_native_structure(ty) {
+        // Unchanged
+        RustTy::BuiltinIdent(rustify_ty(ty))
+    } else {
+        let ty = rustify_ty(ty);
+        RustTy::EngineClass {
+            tokens: quote! { Gd<crate::engine::#ty> },
+            inner_class: ty,
+        }
+    }
+}
+
+/// Parse a string of semicolon-separated C-style type declarations. Fail with `None` if any errors occur.
+pub fn parse_native_structures_format(input: &str) -> Option<Vec<NativeStructuresField>> {
+    input
+        .split(';')
+        .filter(|var| !var.trim().is_empty())
+        .map(|var| {
+            let mut parts = var.trim().splitn(2, ' ');
+            let mut field_type = parts.next()?.to_owned();
+            let mut field_name = parts.next()?.to_owned();
+
+            // If the field is a pointer, put the star on the type, not
+            // the name.
+            if field_name.starts_with('*') {
+                field_name.remove(0);
+                field_type.push('*');
+            }
+
+            // If Godot provided a default value, ignore it. (TODO We
+            // might use these if we synthetically generate constructors
+            // in the future)
+            if let Some(index) = field_name.find(" = ") {
+                field_name.truncate(index);
+            }
+
+            Some(NativeStructuresField {
+                field_type,
+                field_name,
+            })
+        })
+        .collect()
+}
+
+pub(crate) fn make_enumerator_ord(ord: i32) -> Literal {
+    Literal::i32_suffixed(ord)
+}
+
+/// This method is needed for platform-dependent types like raw `VariantOperator`, which can be `i32` or `u32`.
+/// Do not suffix them.
+pub(crate) fn make_enumerator_ord_unsuffixed(ord: i32) -> Literal {
+    Literal::i32_unsuffixed(ord)
+}
+
+pub(crate) fn make_bitfield_flag_ord(ord: u64) -> Literal {
+    Literal::u64_suffixed(ord)
+}
+
+pub(crate) fn to_rust_expr(expr: &str, ty: &RustTy) -> TokenStream {
+    // println!("\n> to_rust_expr({expr}, {ty:?})");
+
+    to_rust_expr_inner(expr, ty, false)
+}
+
+fn to_rust_expr_inner(expr: &str, ty: &RustTy, is_inner: bool) -> TokenStream {
+    // println!("> to_rust_expr_inner({expr}, {is_inner})");
+
+    // Simple literals
+    match expr {
+        "true" => return quote! { true },
+        "false" => return quote! { false },
+        "[]" | "{}" if is_inner => return quote! {},
+        "[]" => return quote! { Array::new() }, // VariantArray or Array<T>
+        "{}" => return quote! { Dictionary::new() },
+        "null" => {
+            return match ty {
+                RustTy::BuiltinIdent(ident) if ident == "Variant" => quote! { Variant::nil() },
+                RustTy::EngineClass { .. } => quote! { unimplemented!("see #156") },
+                _ => panic!("null not representable in target type {ty:?}"),
+            }
+        }
+        // empty string appears only for Callable/Rid in 4.0; default ctor syntax in 4.1+
+        "" | "RID()" | "Callable()" if !is_inner => {
+            return match ty {
+                RustTy::BuiltinIdent(ident) if ident == "Rid" => quote! { Rid::Invalid },
+                RustTy::BuiltinIdent(ident) if ident == "Callable" => {
+                    quote! { Callable::invalid() }
+                }
+                _ => panic!("empty string not representable in target type {ty:?}"),
+            }
+        }
+        _ => {}
+    }
+
+    // Integer literals
+    if let Ok(num) = expr.parse::<i64>() {
+        let lit = Literal::i64_unsuffixed(num);
+        return match ty {
+            RustTy::EngineBitfield { .. } => quote! { crate::obj::EngineBitfield::from_ord(#lit) },
+            RustTy::EngineEnum { .. } => quote! { crate::obj::EngineEnum::from_ord(#lit) },
+            RustTy::BuiltinIdent(ident) if ident == "Variant" => quote! { Variant::from(#lit) },
+            RustTy::BuiltinIdent(ident)
+                if ident == "i64" || ident == "f64" || unmap_meta(ty).is_some() =>
+            {
+                suffixed_lit(num, ident)
+            }
+            _ if is_inner => quote! { #lit as _ },
+            // _ => quote! { #lit as #ty },
+            _ => panic!("cannot map integer literal {expr} to type {ty:?}"),
+        };
+    }
+
+    // Float literals (some floats already handled by integer literals)
+    if let Ok(num) = expr.parse::<f64>() {
+        return match ty {
+            RustTy::BuiltinIdent(ident) if ident == "f64" || unmap_meta(ty).is_some() => {
+                suffixed_lit(num, ident)
+            }
+            _ if is_inner => {
+                let lit = Literal::f64_unsuffixed(num);
+                quote! { #lit as _ }
+            }
+            _ => panic!("cannot map float literal {expr} to type {ty:?}"),
+        };
+    }
+
+    // "..." -> String|StringName|NodePath
+    if let Some(expr) = expr.strip_prefix('"') {
+        let expr = expr.strip_suffix('"').expect("unmatched opening '\"'");
+        return if is_inner {
+            quote! { #expr }
+        } else {
+            match ty {
+                RustTy::BuiltinIdent(ident)
+                    if ident == "GString" || ident == "StringName" || ident == "NodePath" =>
+                {
+                    quote! { #ident::from(#expr) }
+                }
+                _ => quote! { GString::from(#expr) },
+                //_ => panic!("cannot map string literal \"{expr}\" to type {ty:?}"),
+            }
+        };
+    }
+
+    // "&..." -> StringName
+    if let Some(expr) = expr.strip_prefix("&\"") {
+        let expr = expr.strip_suffix('"').expect("unmatched opening '&\"'");
+        return quote! { StringName::from(#expr) };
+    }
+
+    // "^..." -> NodePath
+    if let Some(expr) = expr.strip_prefix("^\"") {
+        let expr = expr.strip_suffix('"').expect("unmatched opening '^\"'");
+        return quote! { NodePath::from(#expr) };
+    }
+
+    // Constructor calls
+    if let Some(pos) = expr.find('(') {
+        let godot_ty = &expr[..pos];
+        let wrapped = expr[pos + 1..].strip_suffix(')').expect("unmatched '('");
+
+        let (rust_ty, ctor) = match godot_ty {
+            "NodePath" => ("NodePath", "from"),
+            "String" => ("GString", "from"),
+            "StringName" => ("StringName", "from"),
+            "RID" => ("Rid", "default"),
+            "Rect2" => ("Rect2", "from_components"),
+            "Rect2i" => ("Rect2i", "from_components"),
+            "Vector2" | "Vector2i" | "Vector3" | "Vector3i" => (godot_ty, "new"),
+            "Transform2D" => ("Transform2D", "__internal_codegen"),
+            "Transform3D" => ("Transform3D", "__internal_codegen"),
+            "Color" => {
+                if wrapped.chars().filter(|&c| c == ',').count() == 2 {
+                    ("Color", "from_rgb")
+                } else {
+                    ("Color", "from_rgba")
+                }
+            }
+            array if array.starts_with("Packed") && array.ends_with("Array") => {
+                assert_eq!(wrapped, "", "only empty packed arrays supported for now");
+                (array, "new")
+            }
+            array if array.starts_with("Array[") => {
+                assert_eq!(wrapped, "[]", "only empty typed arrays supported for now");
+                ("Array", "new")
+            }
+            _ => panic!("unsupported type: {godot_ty}"),
+        };
+
+        // Split wrapped parts by comma
+        let subtokens = wrapped.split(',').map(|part| {
+            let part = part.trim(); // ignore whitespace around commas
+
+            // If there is no comma, there will still be one part (the empty string) -- do not substitute
+            if part.is_empty() {
+                quote! {}
+            } else {
+                to_rust_expr_inner(part, ty, true)
+            }
+        });
+
+        let rust_ty = ident(rust_ty);
+        let ctor = ident(ctor);
+        return quote! {
+            #rust_ty::#ctor(#(#subtokens),*)
+        };
+    }
+
+    panic!(
+        "Not yet supported GDScript expression: '{expr}'\n\
+        Please report this at https://github.com/godot-rust/gdext/issues/new."
+    );
+}
+
+fn suffixed_lit(num: impl fmt::Display, suffix: &Ident) -> TokenStream {
+    // i32, u16 etc happens to be also the literal suffix
+    let combined = format!("{num}{suffix}");
+    combined
+        .parse::<Literal>()
+        .unwrap_or_else(|_| panic!("invalid literal {combined}"))
+        .to_token_stream()
+}
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+
+#[test]
+fn gdscript_to_rust_expr() {
+    // The 'None' type is used to simulate absence of type information. Some tests are commented out, because this functionality is not
+    // yet needed. If we ever want to reuse to_rust_expr() in other contexts, we could re-enable them.
+
+    let ty_int = RustTy::BuiltinIdent(ident("i64"));
+    let ty_int = Some(&ty_int);
+
+    let ty_int_u16 = RustTy::BuiltinIdent(ident("u16"));
+    let ty_int_u16 = Some(&ty_int_u16);
+
+    let ty_float = RustTy::BuiltinIdent(ident("f64"));
+    let ty_float = Some(&ty_float);
+
+    let ty_float_f32 = RustTy::BuiltinIdent(ident("f32"));
+    let ty_float_f32 = Some(&ty_float_f32);
+
+    let ty_enum = RustTy::EngineEnum {
+        tokens: quote! { SomeEnum },
+        surrounding_class: None,
+    };
+    let ty_enum = Some(&ty_enum);
+
+    let ty_bitfield = RustTy::EngineBitfield {
+        tokens: quote! { SomeEnum },
+        surrounding_class: None,
+    };
+    let ty_bitfield = Some(&ty_bitfield);
+
+    let ty_variant = RustTy::BuiltinIdent(ident("Variant"));
+    let ty_variant = Some(&ty_variant);
+
+    // let ty_object = RustTy::EngineClass {
+    //     tokens: quote! { Gd<MyClass> },
+    //     class: "MyClass".to_string(),
+    // };
+    // let ty_object = Some(&ty_object);
+
+    let ty_string = RustTy::BuiltinIdent(ident("GString"));
+    let ty_string = Some(&ty_string);
+
+    let ty_stringname = RustTy::BuiltinIdent(ident("StringName"));
+    let ty_stringname = Some(&ty_stringname);
+
+    let ty_nodepath = RustTy::BuiltinIdent(ident("NodePath"));
+    let ty_nodepath = Some(&ty_nodepath);
+
+    #[rustfmt::skip]
+    let table = [
+        // int
+        ("0",                                              ty_int,             quote! { 0i64 }),
+        ("-1",                                             ty_int,             quote! { -1i64 }),
+        ("2147483647",                                     ty_int,             quote! { 2147483647i64 }),
+        ("-2147483648",                                    ty_int,             quote! { -2147483648i64 }),
+        // ("2147483647",                                     None,               quote! { 2147483647 }),
+        // ("-2147483648",                                    None,               quote! { -2147483648 }),
+
+        // int, meta=uint16
+        ("0",                                              ty_int_u16,         quote! { 0u16 }),
+        ("65535",                                          ty_int_u16,         quote! { 65535u16 }),
+
+        // float (from int/float)
+        ("0",                                              ty_float,           quote! { 0f64 }),
+        ("2147483647",                                     ty_float,           quote! { 2147483647f64 }),
+        ("-1.5",                                           ty_float,           quote! { -1.5f64 }),
+        ("2e3",                                            ty_float,           quote! { 2000f64 }),
+        // ("1.0",                                            None,               quote! { 1.0 }),
+        // ("1e-05",                                          None,               quote! { 0.00001 }),
+
+        // float, meta=f32 (from int/float)
+        ("0",                                              ty_float_f32,       quote! { 0f32 }),
+        ("-2147483648",                                    ty_float_f32,       quote! { -2147483648f32 }),
+        ("-2.5",                                           ty_float_f32,       quote! { -2.5f32 }),
+        ("3e3",                                            ty_float,           quote! { 3000f64 }),
+
+        // enum (from int)
+        ("7",                                              ty_enum,            quote! { crate::obj::EngineEnum::from_ord(7) }),
+
+        // bitfield (from int)
+        ("7",                                              ty_bitfield,        quote! { crate::obj::EngineBitfield::from_ord(7) }),
+
+        // Variant (from int)
+        ("8",                                              ty_variant,         quote! { Variant::from(8) }),
+
+        // Special literals
+        ("true",                                           None,               quote! { true }),
+        ("false",                                          None,               quote! { false }),
+        ("{}",                                             None,               quote! { Dictionary::new() }),
+        ("[]",                                             None,               quote! { Array::new() }),
+
+        ("null",                                           ty_variant,         quote! { Variant::nil() }),
+        // TODO implement #156:
+        //("null",                                           ty_object,          quote! { None }),
+
+        // String-likes
+        ("\" \"",                                          None,               quote! { GString::from(" ") }),
+        ("\"{_}\"",                                        None,               quote! { GString::from("{_}") }),
+        ("&\"text\"",                                      None,               quote! { StringName::from("text") }),
+        ("^\"text\"",                                      None,               quote! { NodePath::from("text") }),
+
+        ("\"text\"",                                       ty_string,          quote! { GString::from("text") }),
+        ("\"text\"",                                       ty_stringname,      quote! { StringName::from("text") }),
+        ("\"text\"",                                       ty_nodepath,        quote! { NodePath::from("text") }),
+        
+        // Composites
+        ("NodePath(\"\")",                                 None,               quote! { NodePath::from("") }),
+        ("Color(1, 0, 0.5, 1)",                            None,               quote! { Color::from_rgba(1 as _, 0 as _, 0.5 as _, 1 as _) }),
+        ("Vector3(0, 1, 2.5)",                             None,               quote! { Vector3::new(0 as _, 1 as _, 2.5 as _) }),
+        ("Rect2(1, 2.2, -3.3, 0)",                         None,               quote! { Rect2::from_components(1 as _, 2.2 as _, -3.3 as _, 0 as _) }),
+        ("Rect2i(1, 2.2, -3.3, 0)",                        None,               quote! { Rect2i::from_components(1 as _, 2.2 as _, -3.3 as _, 0 as _) }),
+        ("PackedFloat32Array()",                           None,               quote! { PackedFloat32Array::new() }),
+        // Due to type inference, it should be enough to just write `Array::new()`
+        ("Array[Plane]([])",                               None,               quote! { Array::new() }),
+        ("Array[RDPipelineSpecializationConstant]([])",    None,               quote! { Array::new() }),
+        ("Array[RID]([])",                                 None,               quote! { Array::new() }),
+
+        // Composites with destructuring
+        ("Transform3D(1, 2, 3, 4, -1.1, -1.2, -1.3, -1.4, 0, 0, 0, 0)", None,  quote! {
+            Transform3D::__internal_codegen(
+                   1 as _,    2 as _,    3 as _,
+                   4 as _, -1.1 as _, -1.2 as _,
+                -1.3 as _, -1.4 as _,    0 as _,
+                   0 as _,    0 as _,    0 as _
+            )
+        }),
+
+        ("Transform2D(1, 2, -1.1,1.2, 0, 0)",              None,               quote! {
+            Transform2D::__internal_codegen(
+                   1 as _,   2 as _,
+                -1.1 as _, 1.2 as _,
+                   0 as _,   0 as _
+            )
+        }),
+    ];
+
+    for (gdscript, ty, rust) in table {
+        // Use arbitrary type if not specified -> should not be read
+        let ty_dontcare = RustTy::EngineArray {
+            tokens: TokenStream::new(),
+            elem_class: String::new(),
+        };
+        let ty = ty.unwrap_or(&ty_dontcare);
+
+        let actual = to_rust_expr(gdscript, ty).to_string();
+        let expected = rust.to_string();
+
+        // println!("{actual} -> {expected}");
+        assert_eq!(actual, expected);
+    }
+}

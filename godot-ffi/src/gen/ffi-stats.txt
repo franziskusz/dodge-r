@@ -1,0 +1,15 @@
+                 delete_gen_dir:    2 ms
+                 write_header_h:    0 ms
+                write_header_rs:    0 ms
+               deserialize_json:  436 ms
+                  build_context:  623 ms
+          generate_central_file:   19 ms
+  generate_builtin_methods_file:  186 ms
+generate_builtin_lifecycle_file:   37 ms
+  generate_classes_servers_file:  118 ms
+    generate_classes_scene_file: 1185 ms
+   generate_classes_editor_file:   35 ms
+        generate_utilities_file:    3 ms
+        generate_interface_file:  471 ms
+----------------------------------------
+                          total: 3122 ms

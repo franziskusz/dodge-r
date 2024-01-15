@@ -1,0 +1,35 @@
+[package]
+name = "godot-codegen"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+license = "MPL-2.0"
+keywords = ["gamedev", "godot", "engine", "codegen"]
+categories = ["game-engines", "graphics"]
+
+[features]
+default = ["codegen-fmt"]
+codegen-fmt = []
+codegen-full = []
+codegen-lazy-fptrs = []
+double-precision = []
+custom-godot = ["godot-bindings/custom-godot"]
+experimental-godot-api = []
+
+[dependencies]
+godot-bindings = { path = "../godot-bindings" }
+godot-fmt = { path = "../godot-fmt" }
+
+heck = "0.4"
+nanoserde = "0.1.35"
+
+# Minimum versions compatible with -Zminimal-versions
+proc-macro2 = "1.0.63"
+quote = "1.0.29"
+
+# Since we don't use Regex for unicode parsing, the features unicode-bool/unicode-gencat are used instead of unicode-perl.
+# See also https://docs.rs/regex/latest/regex/#unicode-features.
+regex = { version = "1.5.5", default-features = false, features = ["std", "unicode-bool", "unicode-gencat"] }
+
+[build-dependencies]
+godot-bindings = { path = "../godot-bindings" } # emit_godot_version_cfg
