@@ -16,6 +16,7 @@ pub struct Main {
     music: Option<Gd<AudioStreamPlayer>>,
     death_sound: Option<Gd<AudioStreamPlayer>>,
     score: i64,
+    hits: i64,
     #[base]
     base: Base<Node>,
 }
@@ -44,13 +45,16 @@ impl Main {
         let mut start_timer = self.base().get_node_as::<Timer>("StartTimer");
 
         self.score = 0;
-
-        player.bind_mut().start(start_position.get_position());
-        start_timer.start();
+        self.hits = 0;
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         let hud = hud.bind_mut();
         hud.update_score(self.score);
+        hud.update_hits(self.hits);
+
+        player.bind_mut().start(start_position.get_position());
+        start_timer.start();
+
         hud.show_message("Get Ready".into());
 
         self.music().play();
@@ -70,6 +74,14 @@ impl Main {
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_score(self.score);
+    }
+
+    #[func]
+    fn on_hit_count(&mut self) {
+        self.hits += 1;
+
+        let mut hud = self.base().get_node_as::<Hud>("Hud");
+        hud.bind_mut().update_hits(self.hits);
     }
 
     #[func]
@@ -127,6 +139,7 @@ impl INode for Main {
         Main {
             mob_scene: PackedScene::new_gd(),
             score: 0,
+            hits: 0,
             base,
             music: None,
             death_sound: None,

@@ -13,25 +13,36 @@ events = [SubResource("InputEventAction_fopy7")]
 [node name="ScoreLabel" type="Label" parent="."]
 anchors_preset = 10
 anchor_right = 1.0
+offset_right = -1254.0
 offset_bottom = 78.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
-text = "0"
-horizontal_alignment = 1
+text = "seconds survived: 0"
 
 [node name="HitLabel" type="Label" parent="."]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 4.0
-offset_top = 988.0
-offset_right = 4.0
-offset_bottom = 1066.0
+offset_left = 672.0
+offset_top = 2.0
+offset_right = -826.0
+offset_bottom = 80.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
-text = "0"
-horizontal_alignment = 1
+text = "hits: 0"
+
+[node name="MobLabel" type="Label" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 1132.0
+offset_top = 6.0
+offset_right = -10.0
+offset_bottom = 84.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 60
+text = "active mobs: 0"
 
 [node name="MessageLabel" type="Label" parent="."]
 anchors_preset = 14

@@ -43,8 +43,23 @@ impl Hud {
     #[func]
     pub fn update_score(&self, score: i64) {
         let mut label = self.base().get_node_as::<Label>("ScoreLabel");
+        let mut label_text: String = "seconds survived: ".to_owned();
+        let score: &str = &*score.to_string();
 
-        label.set_text(score.to_string().into());
+        label_text.push_str(score);
+
+        label.set_text(label_text.to_string().into());
+    }
+
+    #[func]
+    pub fn update_hits(&self, hits: i64) {
+        let mut label = self.base().get_node_as::<Label>("HitLabel");
+        let mut label_text: String = "hits: ".to_owned();
+        let hits: &str = &*hits.to_string();
+
+        label_text.push_str(hits);
+
+        label.set_text(label_text.to_string().into());
     }
 
     #[func]

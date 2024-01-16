@@ -41,7 +41,7 @@ curve = SubResource("1")
 
 [node name="MobSpawnLocation" type="PathFollow2D" parent="MobPath"]
 position = Vector2(-2.97915, -2)
-rotation = 0.00683236
+rotation = 0.00683237
 
 [node name="Hud" parent="." instance=ExtResource("4")]
 
@@ -52,6 +52,7 @@ stream = ExtResource("5")
 stream = ExtResource("6")
 
 [connection signal="hit" from="Player" to="." method="game_over"]
+[connection signal="hit" from="Player" to="." method="on_hit_count"]
 [connection signal="timeout" from="MobTimer" to="." method="on_mob_timer_timeout"]
 [connection signal="timeout" from="ScoreTimer" to="." method="on_score_timer_timeout"]
 [connection signal="timeout" from="StartTimer" to="." method="on_start_timer_timeout"]
