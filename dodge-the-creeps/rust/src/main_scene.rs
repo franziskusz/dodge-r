@@ -1,3 +1,4 @@
+use crate::event_bus;
 use crate::hud::Hud;
 use crate::mob;
 use crate::player;
@@ -17,6 +18,7 @@ pub struct Main {
     death_sound: Option<Gd<AudioStreamPlayer>>,
     score: i64,
     hits: i64,
+    mob_counter: i64,
     #[base]
     base: Base<Node>,
 }
@@ -46,11 +48,13 @@ impl Main {
 
         self.score = 0;
         self.hits = 0;
+        self.mob_counter = 0;
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         let hud = hud.bind_mut();
         hud.update_score(self.score);
         hud.update_hits(self.hits);
+        hud.update_mob_counter_label(self.mob_counter);
 
         player.bind_mut().start(start_position.get_position());
         start_timer.start();
@@ -82,6 +86,14 @@ impl Main {
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_hits(self.hits);
+    }
+
+    #[func]
+    fn update_mob_counter(&mut self, counter: i64) {
+        self.mob_counter += counter;
+
+        let mut hud = self.base().get_node_as::<Hud>("Hud");
+        hud.bind_mut().update_mob_counter_label(self.mob_counter);
     }
 
     #[func]
@@ -117,8 +129,13 @@ impl Main {
 
             mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
+            //connect to despawn signal
+            //mob.despawned.connect();
+
             let mut hud = self.base().get_node_as::<Hud>("Hud");
             hud.connect("start_game".into(), mob.callable("on_start_game"));
+
+            self.update_mob_counter(1);
 
             i = i + 1;
         }
@@ -140,6 +157,7 @@ impl INode for Main {
             mob_scene: PackedScene::new_gd(),
             score: 0,
             hits: 0,
+            mob_counter: 0,
             base,
             music: None,
             death_sound: None,

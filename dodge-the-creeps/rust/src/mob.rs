@@ -1,3 +1,5 @@
+use crate::event_bus;
+
 use godot::engine::{AnimatedSprite2D, IRigidBody2D, RigidBody2D};
 use godot::prelude::*;
 use rand::seq::SliceRandom;
@@ -14,9 +16,18 @@ pub struct Mob {
 
 #[godot_api]
 impl Mob {
+    //#[signal]
+    //fn despawned();
+
     #[func]
     fn on_visibility_screen_exited(&mut self) {
         self.base_mut().queue_free();
+        //let mut event_bus = event_bus::EventBus
+        //    .self
+        //    .base()
+        //    .get_node_as::<Node>("EventBus");
+        //let mut event_bus = self.base().get_node_as::<Node>("EventBus");
+        //event_bus.emit_signal("despawned".into(), &[]);
     }
 
     #[func]

@@ -63,6 +63,17 @@ impl Hud {
     }
 
     #[func]
+    pub fn update_mob_counter_label(&self, mob_counter: i64) {
+        let mut label = self.base().get_node_as::<Label>("MobLabel");
+        let mut label_text: String = "active mobs: ".to_owned();
+        let mob_counter: &str = &*mob_counter.to_string();
+
+        label_text.push_str(mob_counter);
+
+        label.set_text(label_text.to_string().into());
+    }
+
+    #[func]
     fn on_start_button_pressed(&mut self) {
         let mut button = self.base().get_node_as::<Button>("StartButton");
         button.hide();
