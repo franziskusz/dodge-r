@@ -23,10 +23,10 @@ text = "seconds survived: 0"
 [node name="HitLabel" type="Label" parent="."]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 672.0
-offset_top = 2.0
-offset_right = -826.0
-offset_bottom = 80.0
+offset_left = 770.0
+offset_top = 10.0
+offset_right = -760.0
+offset_bottom = 88.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
@@ -35,10 +35,10 @@ text = "hits: 0"
 [node name="MobLabel" type="Label" parent="."]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 1132.0
-offset_top = 6.0
-offset_right = -10.0
-offset_bottom = 84.0
+offset_left = 1220.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = 88.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
@@ -76,8 +76,19 @@ theme_override_font_sizes/font_size = 60
 shortcut = SubResource("4")
 text = "Start"
 
+[node name="StopButton" type="Button" parent="."]
+visible = false
+offset_left = 12.0
+offset_top = 988.0
+offset_right = 171.0
+offset_bottom = 1069.0
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 60
+text = "Stop"
+
 [node name="MessageTimer" type="Timer" parent="."]
 one_shot = true
 
 [connection signal="pressed" from="StartButton" to="." method="on_start_button_pressed"]
+[connection signal="pressed" from="StopButton" to="." method="on_stop_button_pressed"]
 [connection signal="timeout" from="MessageTimer" to="." method="on_message_timer_timeout"]

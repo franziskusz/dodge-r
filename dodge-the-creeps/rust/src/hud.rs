@@ -13,6 +13,9 @@ impl Hud {
     #[signal]
     fn start_game();
 
+    #[signal]
+    fn stop_game();
+
     #[func]
     pub fn show_message(&self, text: GString) {
         let mut message_label = self.base().get_node_as::<Label>("MessageLabel");
@@ -75,14 +78,30 @@ impl Hud {
 
     #[func]
     fn on_start_button_pressed(&mut self) {
-        let mut button = self.base().get_node_as::<Button>("StartButton");
-        button.hide();
+        let mut start_button = self.base().get_node_as::<Button>("StartButton");
+        start_button.hide();
+        let mut stop_button = self.base().get_node_as::<Button>("StopButton");
+        stop_button.show();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
         // instance through Gd<Hud>::bind_mut(). It will try creating a 2nd &mut reference, and thus panic.
         // Deferring the signal is one option to work around it.
         self.base_mut().emit_signal("start_game".into(), &[]);
+    }
+
+    #[func]
+    fn on_stop_button_pressed(&mut self) {
+        let mut stop_button = self.base().get_node_as::<Button>("StopButton");
+        stop_button.hide();
+        let mut start_button = self.base().get_node_as::<Button>("StartButton");
+        start_button.show();
+
+        // Note: this works only because `start_game` is a deferred signal.
+        // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
+        // instance through Gd<Hud>::bind_mut(). It will try creating a 2nd &mut reference, and thus panic.
+        // Deferring the signal is one option to work around it.
+        self.base_mut().emit_signal("stop_game".into(), &[]);
     }
 
     #[func]
