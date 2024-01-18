@@ -1,4 +1,4 @@
-use crate::event_bus;
+//use crate::event_bus;
 
 use godot::engine::{AnimatedSprite2D, IRigidBody2D, RigidBody2D};
 use godot::prelude::*;
@@ -16,12 +16,15 @@ pub struct Mob {
 
 #[godot_api]
 impl Mob {
-    //#[signal]
-    //fn despawned();
+    #[signal]
+    fn despawned();
 
     #[func]
     fn on_visibility_screen_exited(&mut self) {
+        self.base_mut().emit_signal("despawned".into(), &[]);
+
         self.base_mut().queue_free();
+
         //let mut event_bus = event_bus::EventBus
         //    .self
         //    .base()

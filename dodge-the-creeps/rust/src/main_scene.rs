@@ -1,4 +1,4 @@
-use crate::event_bus;
+//use crate::event_bus;
 use crate::hud::Hud;
 use crate::mob;
 use crate::player;
@@ -101,6 +101,7 @@ impl Main {
         let mut i = 0;
 
         while i < 10 {
+            i = i + 1;
             let mut mob_spawn_location = self
                 .base()
                 .get_node_as::<PathFollow2D>("MobPath/MobSpawnLocation");
@@ -129,16 +130,21 @@ impl Main {
 
             mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
-            //connect to despawn signal
-            //mob.despawned.connect();
-
             let mut hud = self.base().get_node_as::<Hud>("Hud");
             hud.connect("start_game".into(), mob.callable("on_start_game"));
 
             self.update_mob_counter(1);
 
-            i = i + 1;
+            //connect to despawn signal
+            //mob.despawned.connect();
+
+            mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
         }
+    }
+
+    #[func]
+    fn on_mob_despawn(&mut self) {
+        self.update_mob_counter(-1)
     }
 
     fn music(&mut self) -> &mut AudioStreamPlayer {
