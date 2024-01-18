@@ -102,49 +102,55 @@ impl Main {
 
         while i < 10 {
             i = i + 1;
-            let mut mob_spawn_location = self
-                .base()
-                .get_node_as::<PathFollow2D>("MobPath/MobSpawnLocation");
-
-            let mut mob_scene = self.mob_scene.instantiate_as::<RigidBody2D>();
-
-            let mut rng = rand::thread_rng();
-            let progress = rng.gen_range(u32::MIN..u32::MAX);
-
-            mob_spawn_location.set_progress(progress as f32);
-            mob_scene.set_position(mob_spawn_location.get_position());
-
-            let mut direction = mob_spawn_location.get_rotation() + PI / 2.0;
-            direction += rng.gen_range(-PI / 4.0..PI / 4.0);
-
-            mob_scene.set_rotation(direction);
-
-            self.base_mut().add_child(mob_scene.clone().upcast());
-
-            let mut mob = mob_scene.cast::<mob::Mob>();
-            let range = {
-                // Local scope to bind `mob` user object
-                let mob = mob.bind();
-                rng.gen_range(mob.min_speed..mob.max_speed)
-            };
-
-            mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
-
-            let mut hud = self.base().get_node_as::<Hud>("Hud");
-            hud.connect("start_game".into(), mob.callable("on_start_game"));
-
-            self.update_mob_counter(1);
-
-            //connect to despawn signal
-            //mob.despawned.connect();
-
-            mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
+            self.spawn_mob();
         }
     }
 
     #[func]
+    fn spawn_mob(&mut self) {
+        let mut mob_spawn_location = self
+            .base()
+            .get_node_as::<PathFollow2D>("MobPath/MobSpawnLocation");
+
+        let mut mob_scene = self.mob_scene.instantiate_as::<RigidBody2D>();
+
+        let mut rng = rand::thread_rng();
+        let progress = rng.gen_range(u32::MIN..u32::MAX);
+
+        mob_spawn_location.set_progress(progress as f32);
+        mob_scene.set_position(mob_spawn_location.get_position());
+
+        let mut direction = mob_spawn_location.get_rotation() + PI / 2.0;
+        direction += rng.gen_range(-PI / 4.0..PI / 4.0);
+
+        mob_scene.set_rotation(direction);
+
+        self.base_mut().add_child(mob_scene.clone().upcast());
+
+        let mut mob = mob_scene.cast::<mob::Mob>();
+        let range = {
+            // Local scope to bind `mob` user object
+            let mob = mob.bind();
+            rng.gen_range(mob.min_speed..mob.max_speed)
+        };
+
+        mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
+
+        let mut hud = self.base().get_node_as::<Hud>("Hud");
+        hud.connect("start_game".into(), mob.callable("on_start_game"));
+
+        self.update_mob_counter(1);
+
+        //connect to despawn signal
+        //mob.despawned.connect();
+
+        mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
+    }
+
+    #[func]
     fn on_mob_despawn(&mut self) {
-        self.update_mob_counter(-1)
+        self.update_mob_counter(-1);
+        self.spawn_mob();
     }
 
     fn music(&mut self) -> &mut AudioStreamPlayer {
