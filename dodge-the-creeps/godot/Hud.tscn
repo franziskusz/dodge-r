@@ -32,6 +32,18 @@ theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
 text = "hits: 0"
 
+[node name="FramesLabel" type="Label" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 1596.0
+offset_top = 950.0
+offset_right = -102.0
+offset_bottom = 1028.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 60
+text = "fps: 0"
+
 [node name="MobLabel" type="Label" parent="."]
 anchors_preset = 10
 anchor_right = 1.0

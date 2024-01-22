@@ -19,6 +19,8 @@ pub struct Main {
     score: i64,
     hits: i64,
     mob_counter: i64,
+    frames: i64,
+    fps: f64,
     #[base]
     base: Base<Node>,
 }
@@ -29,9 +31,11 @@ impl Main {
     fn game_over(&mut self) {
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
         let mut mob_timer = self.base().get_node_as::<Timer>("MobTimer");
+        let mut fps_timer = self.base().get_node_as::<Timer>("FPSTimer");
 
         score_timer.stop();
         mob_timer.stop();
+        fps_timer.stop();
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().show_game_over();
@@ -46,9 +50,12 @@ impl Main {
         let mut player = self.base().get_node_as::<player::Player>("Player");
         let mut start_timer = self.base().get_node_as::<Timer>("StartTimer");
 
+        //godot_singleton().get_frames_per_second();
+
         self.score = 0;
         self.hits = 0;
         self.mob_counter = 0;
+        self.frames = 0;
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         let hud = hud.bind_mut();
@@ -68,8 +75,11 @@ impl Main {
     fn on_start_timer_timeout(&self) {
         let mut mob_timer = self.base().get_node_as::<Timer>("MobTimer");
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
+        let mut fps_timer = self.base().get_node_as::<Timer>("FPSTimer");
         mob_timer.start();
         score_timer.start();
+        fps_timer.set_wait_time(1.0);
+        fps_timer.start();
     }
 
     #[func]
@@ -78,6 +88,19 @@ impl Main {
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_score(self.score);
+    }
+
+    #[func]
+    fn on_fps_timer_timeout(&mut self) {
+        let frames = self.frames as f64;
+
+        godot_print!("fps count");
+
+        self.fps = frames;
+        self.frames = 0;
+        let mut hud = self.base().get_node_as::<Hud>("Hud");
+        hud.bind_mut().update_fps(self.fps);
+        //TODO: if fps < 30 call game over
     }
 
     #[func]
@@ -170,6 +193,8 @@ impl INode for Main {
             score: 0,
             hits: 0,
             mob_counter: 0,
+            frames: 0,
+            fps: 0.0,
             base,
             music: None,
             death_sound: None,
@@ -183,5 +208,9 @@ impl INode for Main {
         self.mob_scene = load("res://Mob.tscn");
         self.music = Some(self.base().get_node_as("Music"));
         self.death_sound = Some(self.base().get_node_as("DeathSound"));
+    }
+
+    fn process(&mut self, delta: f64) {
+        self.frames += 1;
     }
 }

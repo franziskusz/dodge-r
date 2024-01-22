@@ -26,6 +26,7 @@ impl Hud {
         timer.start();
     }
 
+    #[func]
     pub fn show_game_over(&self) {
         self.show_message("Game Over".into());
 
@@ -74,6 +75,18 @@ impl Hud {
         label_text.push_str(mob_counter);
 
         label.set_text(label_text.to_string().into());
+    }
+
+    #[func]
+    pub fn update_fps(&self, fps: f64) {
+        let mut label = self.base().get_node_as::<Label>("FramesLabel");
+        let mut label_text: String = "fps: ".to_owned();
+        let fps: &str = &*fps.to_string();
+
+        label_text.push_str(fps);
+
+        label.set_text(label_text.to_string().into());
+        //let fps: godot::engine::Engine.get_frames_per_second();
     }
 
     #[func]
