@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://4qj82lkgry0r"]
+
+[node name="Benchmark" type="Benchmark"]
+
+[node name="FPSTimer" type="Timer" parent="."]
+
+[connection signal="timeout" from="FPSTimer" to="." method="on_fps_timer_timeout"]

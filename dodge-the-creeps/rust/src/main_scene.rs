@@ -1,4 +1,5 @@
 //use crate::event_bus;
+use crate::benchmark;
 use crate::hud::Hud;
 use crate::mob;
 use crate::player;
@@ -14,6 +15,7 @@ use std::f32::consts::PI;
 #[class(base=Node)]
 pub struct Main {
     mob_scene: Gd<PackedScene>,
+    benchmark_scene: Gd<PackedScene>,
     music: Option<Gd<AudioStreamPlayer>>,
     death_sound: Option<Gd<AudioStreamPlayer>>,
     score: i64,
@@ -27,6 +29,13 @@ pub struct Main {
 
 #[godot_api]
 impl Main {
+    #[signal]
+    fn game_over_signal();
+    #[signal]
+    fn game_start_signal();
+    #[signal]
+    fn start_timer_signal();
+
     #[func]
     fn game_over(&mut self) {
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
@@ -94,12 +103,12 @@ impl Main {
     fn on_fps_timer_timeout(&mut self) {
         let frames = self.frames as f64;
 
-        godot_print!("fps count");
+        //godot_print!("fps count");
 
         self.fps = frames;
         self.frames = 0;
         let mut hud = self.base().get_node_as::<Hud>("Hud");
-        hud.bind_mut().update_fps(self.fps);
+        //hud.bind_mut().update_fps(self.fps);
         //TODO: if fps < 30 call game over
     }
 
@@ -190,6 +199,7 @@ impl INode for Main {
     fn init(base: Base<Node>) -> Self {
         Main {
             mob_scene: PackedScene::new_gd(),
+            benchmark_scene: PackedScene::new_gd(),
             score: 0,
             hits: 0,
             mob_counter: 0,
@@ -206,8 +216,11 @@ impl INode for Main {
         // If the resource does not exist or has an incompatible type, this panics.
         // There is also try_load() if you want to check whether loading succeeded.
         self.mob_scene = load("res://Mob.tscn");
+        self.benchmark_scene = load("res://Benchmark.tscn");
         self.music = Some(self.base().get_node_as("Music"));
         self.death_sound = Some(self.base().get_node_as("DeathSound"));
+        let mut benchmark_scene = self.benchmark_scene.instantiate_as::<Node>();
+        let mut benchmark = benchmark_scene.cast::<benchmark::Benchmark>();
     }
 
     fn process(&mut self, delta: f64) {
