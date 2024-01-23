@@ -21,12 +21,16 @@ pub struct Main {
     mob_counter: i64,
     frames: i64,
     fps: f64,
+    is_safe: bool,
     #[base]
     base: Base<Node>,
 }
 
 #[godot_api]
 impl Main {
+    #[signal]
+    fn safe_mode_shutdown();
+
     #[func]
     fn game_over(&mut self) {
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
@@ -94,13 +98,22 @@ impl Main {
     fn on_fps_timer_timeout(&mut self) {
         let frames = self.frames as f64;
 
-        godot_print!("fps count");
-
         self.fps = frames;
         self.frames = 0;
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_fps(self.fps);
+        let fps_string: String = self.fps.to_string();
+        let mob_counter_string: String = self.mob_counter.to_string();
+        godot_print!("mobs, fps: {},{}", mob_counter_string, fps_string);
         //TODO: if fps < 30 call game over
+        if self.is_safe {
+            if self.fps < 20.0 {
+                godot_print!("fps limit");
+                self.base_mut()
+                    .emit_signal("safe_mode_shutdown".into(), &[]);
+                //self.game_over();
+            }
+        }
     }
 
     #[func]
@@ -176,6 +189,12 @@ impl Main {
         self.spawn_mob();
     }
 
+    #[func]
+    fn switch_safe_mode(&mut self) {
+        self.is_safe = !self.is_safe;
+        godot_print!("safemode: {}", self.is_safe.to_string());
+    }
+
     fn music(&mut self) -> &mut AudioStreamPlayer {
         self.music.as_deref_mut().unwrap()
     }
@@ -195,6 +214,7 @@ impl INode for Main {
             mob_counter: 0,
             frames: 0,
             fps: 0.0,
+            is_safe: true,
             base,
             music: None,
             death_sound: None,
@@ -208,6 +228,11 @@ impl INode for Main {
         self.mob_scene = load("res://Mob.tscn");
         self.music = Some(self.base().get_node_as("Music"));
         self.death_sound = Some(self.base().get_node_as("DeathSound"));
+        let mut hud = self.base().get_node_as::<Hud>("Hud");
+        hud.connect(
+            "safe_mode_switch".into(),
+            self.base().callable("switch_safe_mode"),
+        );
     }
 
     fn process(&mut self, delta: f64) {

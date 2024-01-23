@@ -16,6 +16,9 @@ impl Hud {
     #[signal]
     fn stop_game();
 
+    #[signal]
+    fn safe_mode_switch();
+
     #[func]
     pub fn show_message(&self, text: GString) {
         let mut message_label = self.base().get_node_as::<Label>("MessageLabel");
@@ -95,6 +98,8 @@ impl Hud {
         start_button.hide();
         let mut stop_button = self.base().get_node_as::<Button>("StopButton");
         stop_button.show();
+        let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
+        safe_mode_switch.hide();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -109,6 +114,8 @@ impl Hud {
         stop_button.hide();
         let mut start_button = self.base().get_node_as::<Button>("StartButton");
         start_button.show();
+        let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
+        safe_mode_switch.show();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -121,6 +128,11 @@ impl Hud {
     fn on_message_timer_timeout(&self) {
         let mut message_label = self.base().get_node_as::<Label>("MessageLabel");
         message_label.hide()
+    }
+
+    #[func]
+    fn on_safe_mode_switch(&mut self) {
+        self.base_mut().emit_signal("safe_mode_switch".into(), &[]);
     }
 }
 

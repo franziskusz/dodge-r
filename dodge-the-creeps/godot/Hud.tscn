@@ -101,6 +101,16 @@ text = "Stop"
 [node name="MessageTimer" type="Timer" parent="."]
 one_shot = true
 
+[node name="SafeModeSwitch" type="CheckButton" parent="."]
+offset_left = 40.0
+offset_top = 490.0
+offset_right = 240.0
+offset_bottom = 616.0
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 41
+text = "Safe Mode Off"
+
 [connection signal="pressed" from="StartButton" to="." method="on_start_button_pressed"]
 [connection signal="pressed" from="StopButton" to="." method="on_stop_button_pressed"]
 [connection signal="timeout" from="MessageTimer" to="." method="on_message_timer_timeout"]
+[connection signal="pressed" from="SafeModeSwitch" to="." method="on_safe_mode_switch"]
