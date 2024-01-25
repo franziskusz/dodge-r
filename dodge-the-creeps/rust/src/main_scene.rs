@@ -31,6 +31,9 @@ impl Main {
     #[signal]
     fn safe_mode_shutdown();
 
+    //#[signal]
+    //fn mob_spawned();
+
     #[func]
     fn game_over(&mut self) {
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
@@ -136,7 +139,7 @@ impl Main {
     fn on_mob_timer_timeout(&mut self) {
         let mut i = 0;
 
-        while i < 10 {
+        while i < 1 {
             i = i + 1;
             self.spawn_mob();
         }
@@ -169,6 +172,10 @@ impl Main {
             let mob = mob.bind();
             rng.gen_range(mob.min_speed..mob.max_speed)
         };
+
+        mob.callable("set_velocity");
+
+        //(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
         mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
@@ -235,7 +242,7 @@ impl INode for Main {
         );
     }
 
-    fn process(&mut self, delta: f64) {
+    fn process(&mut self, _delta: f64) {
         self.frames += 1;
     }
 }
