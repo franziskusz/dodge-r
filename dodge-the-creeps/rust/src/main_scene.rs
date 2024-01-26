@@ -24,6 +24,8 @@ pub struct Main {
     is_safe: bool,
     #[base]
     base: Base<Node>,
+    #[export]
+    player_position: Vector2,
 }
 
 #[godot_api]
@@ -31,8 +33,15 @@ impl Main {
     #[signal]
     fn safe_mode_shutdown();
 
+    #[signal]
+    fn send_player_position(player_position: Vector2);
+
     //#[signal]
     //fn mob_spawned();
+    //#[func]
+    //pub fn get_player_position(&mut self) -> Vector2 {
+    //    self.player_position
+    //}
 
     #[func]
     fn game_over(&mut self) {
@@ -70,6 +79,7 @@ impl Main {
         hud.update_hits(self.hits);
         hud.update_mob_counter_label(self.mob_counter);
 
+        self.player_position = start_position.get_position();
         player.bind_mut().start(start_position.get_position());
         start_timer.start();
 
@@ -173,11 +183,12 @@ impl Main {
             rng.gen_range(mob.min_speed..mob.max_speed)
         };
 
-        mob.callable("set_velocity");
+        //mob.callable("set_velocity");
 
         //(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
         mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
+        //mob.add_constant_central_force(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.connect("start_game".into(), mob.callable("on_start_game"));
@@ -222,6 +233,7 @@ impl INode for Main {
             frames: 0,
             fps: 0.0,
             is_safe: true,
+            player_position: Vector2::new(0.0, 0.0),
             base,
             music: None,
             death_sound: None,
@@ -244,5 +256,14 @@ impl INode for Main {
 
     fn process(&mut self, _delta: f64) {
         self.frames += 1;
+    }
+
+    fn physics_process(&mut self, _delta: f64) {
+        //TODO emit signal on keyboard input, not on every physics frame
+        let player = self.base().get_node_as::<player::Player>("Player");
+        self.player_position = player.get_position();
+        let args = &[self.player_position.to_variant()];
+        self.base_mut()
+            .emit_signal("send_player_position".into(), args);
     }
 }
