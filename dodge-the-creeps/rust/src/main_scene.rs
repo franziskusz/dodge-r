@@ -7,7 +7,7 @@ use godot::engine::{Marker2D, PathFollow2D, RigidBody2D, Timer};
 use godot::prelude::*;
 
 use rand::Rng as _;
-use std::f32::consts::PI;
+//use std::f32::consts::PI;
 
 // Deriving GodotClass makes the class available to Godot
 #[derive(GodotClass)]
@@ -24,8 +24,8 @@ pub struct Main {
     is_safe: bool,
     #[base]
     base: Base<Node>,
-    //#[export]
-    //player_position: Vector2,
+    #[export]
+    player_position: Vector2,
 }
 
 #[godot_api]
@@ -77,8 +77,22 @@ impl Main {
         hud.update_hits(self.hits);
         hud.update_mob_counter_label(self.mob_counter);
 
-        //self.player_position = start_position.get_position();
+        //debug
+        //godot_print!(
+        //    "A start pos, player pos: {},{}",
+        //    start_position.get_position().to_string(),
+        //    self.player_position.to_string(),
+        //);
+        self.player_position = start_position.get_position();
         player.bind_mut().start(start_position.get_position());
+
+        //debug
+        //godot_print!(
+        //    "B start pos, player pos: {},{}",
+        //    start_position.get_position().to_string(),
+        //    self.player_position.to_string(),
+        //);
+
         start_timer.start();
 
         hud.show_message("Get Ready".into());
@@ -167,10 +181,24 @@ impl Main {
         mob_spawn_location.set_progress(progress as f32);
         mob_scene.set_position(mob_spawn_location.get_position());
 
-        let mut direction = mob_spawn_location.get_rotation() + PI / 2.0;
-        direction += rng.gen_range(-PI / 4.0..PI / 4.0);
+        //let mut direction = mob_spawn_location.get_rotation() + PI / 2.0;
+        //direction += rng.gen_range(-PI / 4.0..PI / 4.0);
 
-        mob_scene.set_rotation(direction);
+        //godot_print!("C direction: {}", direction.to_string()); //debug
+
+        //mob_scene.set_rotation(direction);
+
+        //godot_print!("C player pos: {}", self.player_position.to_string());//debug
+
+        let player = self.base().get_node_as::<player::Player>("Player");
+        let start_target = player.get_position();
+
+        let start_angle = mob_spawn_location
+            .get_position()
+            .angle_to_point(start_target);
+
+        //godot_print!("C angle to player: {}", start_angle.to_string());//debug
+        mob_scene.set_rotation(start_angle);
 
         self.base_mut().add_child(mob_scene.clone().upcast());
 
@@ -181,11 +209,22 @@ impl Main {
             rng.gen_range(mob.min_speed..mob.max_speed)
         };
 
+        //let player = self.base().get_node_as::<player::Player>("Player");
+        //let target = player.get_position();
+
+        let target = start_target;
+        //godot_print!("C target: {}", target.to_string()); //debug
+
+        mob.look_at(target);
+        let mob_direction = mob.get_position().angle_to_point(target);
+
         //mob.callable("set_velocity");
 
         //(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
-        mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
+        //godot_print!("C mob_direction: {}", mob_direction.to_string()); //debug
+
+        mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(mob_direction)));
         //mob.add_constant_central_force(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
@@ -211,6 +250,14 @@ impl Main {
         godot_print!("safemode: {}", self.is_safe.to_string());
     }
 
+    #[func]
+    pub fn update_player_position(&mut self, player_position: Vector2) {
+        self.player_position = player_position;
+        //debug WARNING: this will overload the output, still can be helpful
+        //let target_string: String = self.target.to_string();
+        //godot_print!("target: {}", target_string);
+    }
+
     fn music(&mut self) -> &mut AudioStreamPlayer {
         self.music.as_deref_mut().unwrap()
     }
@@ -231,7 +278,7 @@ impl INode for Main {
             frames: 0,
             fps: 0.0,
             is_safe: true,
-            //player_position: Vector2::new(0.0, 0.0),
+            player_position: Vector2::new(0.0, 0.0),
             base,
             music: None,
             death_sound: None,
@@ -249,6 +296,12 @@ impl INode for Main {
         hud.connect(
             "safe_mode_switch".into(),
             self.base().callable("switch_safe_mode"),
+        );
+
+        let mut player = self.base().get_node_as::<player::Player>("Player");
+        player.connect(
+            "send_player_position".into(),
+            self.base().callable("update_player_position"),
         );
     }
 

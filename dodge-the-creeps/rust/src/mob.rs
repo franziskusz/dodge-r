@@ -42,22 +42,10 @@ impl Mob {
         //    .get_node_as::<CanvasItem>("Main/ColorRect");
         //let mouse = screen.get_local_mouse_position();
         //self.base_mut().look_at(mouse);
-        let target = self.target;
 
-        self.base_mut().look_at(target);
-
-        let direction = self.base().get_position().angle_to_point(self.target);
-
-        //let direction = mouse.angle_to_point(self.base().get_position()) - PI;
-        //self.direction = direction2;
-
-        let mut rng = rand::thread_rng();
-        let range = { rng.gen_range(self.min_speed..self.max_speed) };
-        self.velocity = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
-        //self.base_mut().add_constant_central_force(
-        //    Vector2::new(range, 0.0).rotated(real::from_f32(direction)),
-        //);
-        self.is_aiming = true;
+        self.aim_at_player();
+        //let velocity = self.velocity;
+        //self.base_mut().set_linear_velocity(velocity);
 
         //self.base_mut()
         //    .set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
@@ -95,6 +83,26 @@ impl Mob {
         //let target_string: String = self.target.to_string();
         //godot_print!("target: {}", target_string);
     }
+
+    #[func]
+    fn aim_at_player(&mut self) {
+        let target = self.target;
+
+        self.base_mut().look_at(target);
+
+        let direction = self.base().get_position().angle_to_point(self.target);
+
+        //let direction = mouse.angle_to_point(self.base().get_position()) - PI;
+        //self.direction = direction2;
+
+        let mut rng = rand::thread_rng();
+        let range = { rng.gen_range(self.min_speed..self.max_speed) };
+        self.velocity = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
+        //self.base_mut().add_constant_central_force(
+        //    Vector2::new(range, 0.0).rotated(real::from_f32(direction)),
+        //);
+        self.is_aiming = true;
+    }
 }
 
 #[godot_api]
@@ -129,7 +137,10 @@ impl IRigidBody2D for Mob {
         //let range = { rng.gen_range(self.min_speed..self.max_speed) };
 
         //self.velocity = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
-        self.velocity = self.base().get_linear_velocity();
+
+        //self.velocity = self.base().get_linear_velocity();
+
+        //self.aim_at_player();
 
         //let mut main = self
         //    .base()
@@ -156,6 +167,12 @@ impl IRigidBody2D for Mob {
             self.base().callable("update_target"),
         );
 
+        let target = player.get_position();
+        self.target = target;
+
+        //self.velocity = self.base().get_linear_velocity();
+        self.aim_at_player();
+
         //self.connect("send_player_position".into(), )
         //mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
     }
@@ -173,10 +190,14 @@ impl IRigidBody2D for Mob {
     }
 
     fn integrate_forces(&mut self, mut _physics_state: Gd<PhysicsDirectBodyState2D>) {
-        if self.is_aiming {
-            let velocity = self.velocity;
-            self.base_mut().set_linear_velocity(velocity);
-        }
+        //if self.is_aiming {
+        //    let velocity = self.velocity;
+        //    self.base_mut().set_linear_velocity(velocity);
+        //}
+
+        //self.aim_at_player();
+        let velocity = self.velocity;
+        self.base_mut().set_linear_velocity(velocity);
     }
 
     fn input(&mut self, _event: Gd<InputEvent>) {
