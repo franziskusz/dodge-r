@@ -24,8 +24,8 @@ pub struct Main {
     is_safe: bool,
     #[base]
     base: Base<Node>,
-    #[export]
-    player_position: Vector2,
+    //#[export]
+    //player_position: Vector2,
 }
 
 #[godot_api]
@@ -66,8 +66,6 @@ impl Main {
         let mut player = self.base().get_node_as::<player::Player>("Player");
         let mut start_timer = self.base().get_node_as::<Timer>("StartTimer");
 
-        //godot_singleton().get_frames_per_second();
-
         self.score = 0;
         self.hits = 0;
         self.mob_counter = 0;
@@ -79,7 +77,7 @@ impl Main {
         hud.update_hits(self.hits);
         hud.update_mob_counter_label(self.mob_counter);
 
-        self.player_position = start_position.get_position();
+        //self.player_position = start_position.get_position();
         player.bind_mut().start(start_position.get_position());
         start_timer.start();
 
@@ -118,13 +116,13 @@ impl Main {
         let fps_string: String = self.fps.to_string();
         let mob_counter_string: String = self.mob_counter.to_string();
         godot_print!("mobs, fps: {},{}", mob_counter_string, fps_string);
-        //TODO: if fps < 30 call game over
+
         if self.is_safe {
             if self.fps < 20.0 {
+                //TODO make this accessible via main menu
                 godot_print!("fps limit");
                 self.base_mut()
                     .emit_signal("safe_mode_shutdown".into(), &[]);
-                //self.game_over();
             }
         }
     }
@@ -147,7 +145,7 @@ impl Main {
 
     #[func]
     fn on_mob_timer_timeout(&mut self) {
-        let mut i = 0;
+        let mut i = 0; // TODO make this accessible via main menu
 
         while i < 1 {
             i = i + 1;
@@ -233,7 +231,7 @@ impl INode for Main {
             frames: 0,
             fps: 0.0,
             is_safe: true,
-            player_position: Vector2::new(0.0, 0.0),
+            //player_position: Vector2::new(0.0, 0.0),
             base,
             music: None,
             death_sound: None,
@@ -260,10 +258,10 @@ impl INode for Main {
 
     fn physics_process(&mut self, _delta: f64) {
         //TODO emit signal on keyboard input, not on every physics frame
-        let player = self.base().get_node_as::<player::Player>("Player");
-        self.player_position = player.get_position();
-        let args = &[self.player_position.to_variant()];
-        self.base_mut()
-            .emit_signal("send_player_position".into(), args);
+        //let player = self.base().get_node_as::<player::Player>("Player");
+        //self.player_position = player.get_position();
+        //let args = &[self.player_position.to_variant()];
+        //self.base_mut()
+        //    .emit_signal("send_player_position".into(), args);
     }
 }

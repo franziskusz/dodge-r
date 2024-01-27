@@ -1,7 +1,8 @@
-use crate::main_scene;
+//use crate::main_scene;
+use crate::player;
 
 use godot::engine::{
-    AnimatedSprite2D, CanvasItem, IRigidBody2D, InputEvent, PhysicsDirectBodyState2D, RigidBody2D,
+    AnimatedSprite2D, IRigidBody2D, InputEvent, PhysicsDirectBodyState2D, RigidBody2D,
 };
 use godot::prelude::*;
 use rand::seq::SliceRandom;
@@ -90,7 +91,7 @@ impl Mob {
     #[func]
     pub fn update_target(&mut self, player_position: Vector2) {
         self.target = player_position;
-        //debug
+        //debug WARNING: this will overload the output, still can be helpful
         //let target_string: String = self.target.to_string();
         //godot_print!("target: {}", target_string);
     }
@@ -130,15 +131,27 @@ impl IRigidBody2D for Mob {
         //self.velocity = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
         self.velocity = self.base().get_linear_velocity();
 
-        let mut main = self
+        //let mut main = self
+        //    .base()
+        //    .get_tree()
+        //    .unwrap()
+        //    .get_root()
+        //    .unwrap()
+        //    .get_node_as::<main_scene::Main>("Main");
+
+        //main.connect(
+        //    "send_player_position".into(),
+        //    self.base().callable("update_target"),
+        //);
+
+        let mut player = self
             .base()
             .get_tree()
             .unwrap()
             .get_root()
             .unwrap()
-            .get_node_as::<main_scene::Main>("Main");
-
-        main.connect(
+            .get_node_as::<player::Player>("Main/Player");
+        player.connect(
             "send_player_position".into(),
             self.base().callable("update_target"),
         );

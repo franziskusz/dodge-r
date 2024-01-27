@@ -6,6 +6,10 @@ use godot::prelude::*;
 pub struct Player {
     speed: real,
     screen_size: Vector2,
+    //movement_delta: Vector2,
+    input_position: Vector2,
+    #[export]
+    position: Vector2,
 
     #[base]
     base: Base<Area2D>,
@@ -15,6 +19,9 @@ pub struct Player {
 impl Player {
     #[signal]
     fn hit();
+
+    #[signal]
+    fn send_player_position(player_position: Vector2);
 
     #[func]
     fn on_player_body_entered(&mut self, _body: Gd<PhysicsBody2D>) {
@@ -47,6 +54,9 @@ impl IArea2D for Player {
         Player {
             speed: 400.0,
             screen_size: Vector2::new(0.0, 0.0),
+            //movement_delta: Vector2::new(0.0, 0.0),
+            input_position: Vector2::new(0.0, 0.0),
+            position: Vector2::new(0.0, 0.0),
             base,
         }
     }
@@ -95,17 +105,31 @@ impl IArea2D for Player {
                 animated_sprite.set_flip_v(velocity.y > 0.0)
             }
 
+            let change = velocity * real::from_f64(delta);
+            let position = self.base().get_global_position() + change;
+            let position = Vector2::new(
+                position.x.clamp(0.0, self.screen_size.x),
+                position.y.clamp(0.0, self.screen_size.y),
+            );
+
+            self.input_position = position;
+
             animated_sprite.play_ex().name(animation.into()).done();
         } else {
             animated_sprite.stop();
         }
+    }
 
-        let change = velocity * real::from_f64(delta);
-        let position = self.base().get_global_position() + change;
-        let position = Vector2::new(
-            position.x.clamp(0.0, self.screen_size.x),
-            position.y.clamp(0.0, self.screen_size.y),
-        );
-        self.base_mut().set_global_position(position);
+    fn physics_process(&mut self, _delta: f64) {
+        let latest_input_position = self.input_position;
+
+        if self.position != latest_input_position {
+            self.position = latest_input_position;
+            self.base_mut().set_global_position(latest_input_position);
+
+            let args = &[latest_input_position.to_variant()];
+            self.base_mut()
+                .emit_signal("send_player_position".into(), args);
+        }
     }
 }
