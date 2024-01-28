@@ -17,8 +17,9 @@ pub struct Mob {
     pub min_speed: real,
     pub max_speed: real,
     pub direction: f32,
+    pub speed: f32,
     pub velocity: Vector2,
-    pub is_aiming: bool,
+    //pub is_aiming: bool,
     pub target: Vector2,
     pub aiming_direction: Vector2,  //updatet on moving target
     pub initial_direction: Vector2, //updatet on init and when bouncing off wall
@@ -68,9 +69,8 @@ impl Mob {
     #[func]
     pub fn update_aiming_direction(&mut self) {
         let direction = self.base().get_position().angle_to_point(self.target);
-        let mut rng = rand::thread_rng();
-        let range = { rng.gen_range(self.min_speed..self.max_speed) };
-        self.aiming_direction = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
+
+        self.aiming_direction = Vector2::new(self.speed, 0.0).rotated(real::from_f32(direction));
     }
 
     #[func]
@@ -86,12 +86,10 @@ impl Mob {
         //let direction = mouse.angle_to_point(self.base().get_position()) - PI;
         //self.direction = direction2;
 
-        let mut rng = rand::thread_rng();
-        let range = { rng.gen_range(self.min_speed..self.max_speed) };
-        self.velocity = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
+        self.velocity = Vector2::new(self.speed, 0.0).rotated(real::from_f32(direction));
         let velocity = self.velocity;
         self.base_mut().set_linear_velocity(velocity);
-        self.is_aiming = true;
+        //self.is_aiming = true;
 
         self.aiming_direction = velocity;
         self.initial_direction = velocity;
@@ -110,8 +108,9 @@ impl IRigidBody2D for Mob {
             min_speed: 150.0,
             max_speed: 250.0,
             direction: 0.0,
+            speed: 0.0,
             velocity: Vector2::new(0.0, 0.0),
-            is_aiming: false,
+            //is_aiming: false,
             target: Vector2::new(0.0, 0.0),
             aiming_direction: Vector2::new(0.0, 0.0),
             initial_direction: Vector2::new(0.0, 0.0),
@@ -163,14 +162,17 @@ impl IRigidBody2D for Mob {
         let target = player.get_position();
         self.target = target;
 
+        let mut rng = rand::thread_rng();
+        self.speed = rng.gen_range(self.min_speed..self.max_speed);
+
         //godot_print!("1. initial target {}", target.to_string()); //debug
 
         self.aim_at_player();
     }
 
     fn physics_process(&mut self, _delta: f64) {
-        let initial_force_divisor = Vector2::new(30.0, 30.0);
-        let aiming_force_divisor = Vector2::new(10.0, 10.0);
+        let initial_force_divisor = Vector2::new(35.0, 35.0);
+        let aiming_force_divisor = Vector2::new(5.0, 5.0);
         let aiming_direction = self.aiming_direction / aiming_force_divisor;
         self.base_mut().apply_force(aiming_direction);
         let initial_direction = self.initial_direction / initial_force_divisor;
