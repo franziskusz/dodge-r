@@ -7,7 +7,6 @@
 
 use godot::prelude::*;
 
-mod event_bus;
 mod hud;
 mod main_scene;
 mod mob;

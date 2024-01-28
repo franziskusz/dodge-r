@@ -42,10 +42,6 @@ impl Player {
         self.input_position = pos;
         self.base_mut().show();
 
-        //let args = &[pos.to_variant()];
-        //self.base_mut()
-        //    .emit_signal("send_player_position".into(), args);
-
         let mut collision_shape = self
             .base()
             .get_node_as::<CollisionShape2D>("CollisionShape2D");
@@ -71,17 +67,6 @@ impl IArea2D for Player {
         let viewport = self.base().get_viewport_rect();
         self.screen_size = viewport.size;
         self.base_mut().hide();
-
-        //let start_position = self
-        //    .base()
-        //    .get_tree()
-        //    .unwrap()
-        //    .get_root()
-        //    .unwrap()
-        //    .get_node_as::<Marker2D>("StartPosition");
-
-        //self.position = start_position.get_position();
-        //self.input_position = start_position.get_position();
     }
 
     fn process(&mut self, delta: f64) {

@@ -36,13 +36,6 @@ impl Main {
     #[signal]
     fn send_player_position(player_position: Vector2);
 
-    //#[signal]
-    //fn mob_spawned();
-    //#[func]
-    //pub fn get_player_position(&mut self) -> Vector2 {
-    //    self.player_position
-    //}
-
     #[func]
     fn game_over(&mut self) {
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
@@ -85,13 +78,6 @@ impl Main {
         //);
         self.player_position = start_position.get_position();
         player.bind_mut().start(start_position.get_position());
-
-        //debug
-        //godot_print!(
-        //    "B start pos, player pos: {},{}",
-        //    start_position.get_position().to_string(),
-        //    self.player_position.to_string(),
-        //);
 
         start_timer.start();
 
@@ -181,13 +167,7 @@ impl Main {
         mob_spawn_location.set_progress(progress as f32);
         mob_scene.set_position(mob_spawn_location.get_position());
 
-        //let mut direction = mob_spawn_location.get_rotation() + PI / 2.0;
-        //direction += rng.gen_range(-PI / 4.0..PI / 4.0);
-
         //godot_print!("C direction: {}", direction.to_string()); //debug
-
-        //mob_scene.set_rotation(direction);
-
         //godot_print!("C player pos: {}", self.player_position.to_string());//debug
 
         let player = self.base().get_node_as::<player::Player>("Player");
@@ -203,37 +183,11 @@ impl Main {
         self.base_mut().add_child(mob_scene.clone().upcast());
 
         let mut mob = mob_scene.cast::<mob::Mob>();
-        //let range = {
-        // Local scope to bind `mob` user object
-        //    let mob = mob.bind();
-        //    rng.gen_range(mob.min_speed..mob.max_speed)
-        //};
-
-        //let player = self.base().get_node_as::<player::Player>("Player");
-        //let target = player.get_position();
-
-        //let target = start_target;
-        //godot_print!("C target: {}", target.to_string()); //debug
-
-        //mob.look_at(target);
-        //let mob_direction = mob.get_position().angle_to_point(target);
-
-        //mob.callable("set_velocity");
-
-        //(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
-
-        //godot_print!("C mob_direction: {}", mob_direction.to_string()); //debug
-
-        //mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(mob_direction)));
-        //mob.add_constant_central_force(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.connect("start_game".into(), mob.callable("on_start_game"));
 
         self.update_mob_counter(1);
-
-        //connect to despawn signal
-        //mob.despawned.connect();
 
         mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
     }
@@ -309,12 +263,5 @@ impl INode for Main {
         self.frames += 1;
     }
 
-    fn physics_process(&mut self, _delta: f64) {
-        //TODO emit signal on keyboard input, not on every physics frame
-        //let player = self.base().get_node_as::<player::Player>("Player");
-        //self.player_position = player.get_position();
-        //let args = &[self.player_position.to_variant()];
-        //self.base_mut()
-        //    .emit_signal("send_player_position".into(), args);
-    }
+    fn physics_process(&mut self, _delta: f64) {}
 }
