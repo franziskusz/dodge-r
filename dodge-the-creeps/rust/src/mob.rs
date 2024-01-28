@@ -31,6 +31,8 @@ impl Mob {
 
     #[func]
     fn on_visibility_screen_exited(&mut self) {
+        self.aim_at_player();
+
         //let screen = self
         //    .base()
         //    .get_tree()
@@ -40,8 +42,6 @@ impl Mob {
         //    .get_node_as::<CanvasItem>("Main/ColorRect");
         //let mouse = screen.get_local_mouse_position();
         //self.base_mut().look_at(mouse);
-
-        self.aim_at_player();
 
         //self.base_mut().emit_signal("despawned".into(), &[]);
 
@@ -129,6 +129,9 @@ impl IRigidBody2D for Mob {
     fn physics_process(&mut self, _delta: f64) {}
 
     fn integrate_forces(&mut self, mut _physics_state: Gd<PhysicsDirectBodyState2D>) {
+        let target = self.target;
+        self.base_mut().look_at(target);
+
         let velocity = self.velocity;
         self.base_mut().set_linear_velocity(velocity);
     }
