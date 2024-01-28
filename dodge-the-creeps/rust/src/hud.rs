@@ -1,4 +1,4 @@
-use godot::engine::{Button, CanvasLayer, ICanvasLayer, Label, Timer};
+use godot::engine::{Button, CanvasLayer, ICanvasLayer, Label, Slider, Timer};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
@@ -18,6 +18,9 @@ impl Hud {
 
     #[signal]
     fn safe_mode_switch();
+
+    #[signal]
+    fn mob_spawn_rate(mob_spawn_rate: i64);
 
     #[func]
     pub fn show_message(&self, text: GString) {
@@ -100,6 +103,8 @@ impl Hud {
         stop_button.show();
         let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
         safe_mode_switch.hide();
+        let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
+        mob_spawn_slider.hide();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -116,6 +121,8 @@ impl Hud {
         start_button.show();
         let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
         safe_mode_switch.show();
+        let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
+        mob_spawn_slider.show();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -134,11 +141,47 @@ impl Hud {
     fn on_safe_mode_switch(&mut self) {
         self.base_mut().emit_signal("safe_mode_switch".into(), &[]);
     }
+
+    #[func]
+    fn init_mob_spawn_slider(&mut self) {
+        godot_print!("init mob spawn slider"); //debug
+        let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
+        mob_spawn_slider.set_use_rounded_values(true);
+        mob_spawn_slider.set_min(0.0);
+        mob_spawn_slider.set_max(100.0);
+        mob_spawn_slider.set_ticks_on_borders(true);
+
+        mob_spawn_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_mob_spawn_label"),
+        );
+
+        self.update_mob_spawn_label(1.0);
+    }
+
+    #[func]
+    fn update_mob_spawn_label(&mut self, slider_value: f64) {
+        let mob_spawns = slider_value as i64;
+
+        let mut label = self
+            .base()
+            .get_node_as::<Label>("MobSpawnSlider/SliderLabel");
+        let mut label_text: String = "spawns/s ".to_owned();
+        let mob_spawns_str: &str = &*mob_spawns.to_string();
+
+        label_text.push_str(mob_spawns_str);
+
+        label.set_text(label_text.to_string().into());
+    }
 }
 
 #[godot_api]
 impl ICanvasLayer for Hud {
     fn init(base: Base<Self::Base>) -> Self {
         Self { base }
+    }
+
+    fn ready(&mut self) {
+        self.init_mob_spawn_slider();
     }
 }

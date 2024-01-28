@@ -3,7 +3,7 @@ use crate::hud::Hud;
 use crate::mob;
 use crate::player;
 
-use godot::engine::{Marker2D, PathFollow2D, RigidBody2D, Timer};
+use godot::engine::{Marker2D, PathFollow2D, RigidBody2D, Slider, Timer};
 use godot::prelude::*;
 
 use rand::Rng as _;
@@ -22,6 +22,7 @@ pub struct Main {
     frames: i64,
     fps: f64,
     is_safe: bool,
+    mob_spawns_per_second: i64,
     #[base]
     base: Base<Node>,
     #[export]
@@ -145,9 +146,9 @@ impl Main {
 
     #[func]
     fn on_mob_timer_timeout(&mut self) {
-        let mut i = 0; // TODO make this accessible via main menu
+        let mut i = 0;
 
-        while i < 1 {
+        while i < self.mob_spawns_per_second {
             i = i + 1;
             self.spawn_mob();
         }
@@ -212,6 +213,13 @@ impl Main {
         //godot_print!("target: {}", target_string);
     }
 
+    #[func]
+    pub fn update_mob_spawn_rate(&mut self, slider_value: f64) {
+        let mob_spawns = slider_value as i64;
+        self.mob_spawns_per_second = mob_spawns;
+        //godot_print!("mob spawns/s {}", mob_spawns.to_string()); //debug
+    }
+
     fn music(&mut self) -> &mut AudioStreamPlayer {
         self.music.as_deref_mut().unwrap()
     }
@@ -232,6 +240,7 @@ impl INode for Main {
             frames: 0,
             fps: 0.0,
             is_safe: true,
+            mob_spawns_per_second: 1,
             player_position: Vector2::new(0.0, 0.0),
             base,
             music: None,
@@ -250,6 +259,12 @@ impl INode for Main {
         hud.connect(
             "safe_mode_switch".into(),
             self.base().callable("switch_safe_mode"),
+        );
+
+        let mut mob_spawn_slider = self.base().get_node_as::<Slider>("Hud/MobSpawnSlider");
+        mob_spawn_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_mob_spawn_rate"),
         );
 
         let mut player = self.base().get_node_as::<player::Player>("Player");

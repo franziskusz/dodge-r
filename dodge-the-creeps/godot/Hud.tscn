@@ -13,7 +13,8 @@ events = [SubResource("InputEventAction_fopy7")]
 [node name="ScoreLabel" type="Label" parent="."]
 anchors_preset = 10
 anchor_right = 1.0
-offset_right = -1254.0
+offset_left = 42.0
+offset_right = -1212.0
 offset_bottom = 78.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
@@ -23,10 +24,9 @@ text = "seconds survived: 0"
 [node name="HitLabel" type="Label" parent="."]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 770.0
-offset_top = 10.0
-offset_right = -760.0
-offset_bottom = 88.0
+offset_left = 772.0
+offset_right = -758.0
+offset_bottom = 78.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
@@ -36,9 +36,9 @@ text = "hits: 0"
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 1596.0
-offset_top = 950.0
+offset_top = 1000.0
 offset_right = -102.0
-offset_bottom = 1028.0
+offset_bottom = 1078.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
@@ -48,9 +48,8 @@ text = "fps: 0"
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 1220.0
-offset_top = 10.0
 offset_right = -12.0
-offset_bottom = 88.0
+offset_bottom = 78.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 60
@@ -104,11 +103,31 @@ one_shot = true
 [node name="SafeModeSwitch" type="CheckButton" parent="."]
 offset_left = 40.0
 offset_top = 490.0
-offset_right = 240.0
+offset_right = 446.0
 offset_bottom = 616.0
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 41
 text = "Safe Mode Off"
+expand_icon = true
+
+[node name="MobSpawnSlider" type="VSlider" parent="."]
+offset_left = 372.0
+offset_top = 680.0
+offset_right = 474.0
+offset_bottom = 948.0
+
+[node name="SliderLabel" type="Label" parent="MobSpawnSlider"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -322.0
+offset_top = 68.0
+offset_right = -145.0
+offset_bottom = 173.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 41
+text = "spawns/s"
 
 [connection signal="pressed" from="StartButton" to="." method="on_start_button_pressed"]
 [connection signal="pressed" from="StopButton" to="." method="on_stop_button_pressed"]
