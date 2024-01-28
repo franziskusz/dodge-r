@@ -1,4 +1,5 @@
 //use crate::main_scene;
+use crate::hud;
 use crate::player;
 
 use godot::engine::{
@@ -19,6 +20,8 @@ pub struct Mob {
     pub velocity: Vector2,
     pub is_aiming: bool,
     pub target: Vector2,
+    pub aiming_direction: Vector2,  //updatet on moving target
+    pub initial_direction: Vector2, //updatet on init and when bouncing off wall
 
     #[base]
     base: Base<RigidBody2D>,
@@ -56,14 +59,25 @@ impl Mob {
     #[func]
     pub fn update_target(&mut self, player_position: Vector2) {
         self.target = player_position;
+        self.update_aiming_direction();
         //debug WARNING: this will overload the output, still can be helpful
         //let target_string: String = self.target.to_string();
         //godot_print!("target: {}", target_string);
     }
 
     #[func]
+    pub fn update_aiming_direction(&mut self) {
+        let direction = self.base().get_position().angle_to_point(self.target);
+        let mut rng = rand::thread_rng();
+        let range = { rng.gen_range(self.min_speed..self.max_speed) };
+        self.aiming_direction = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
+    }
+
+    #[func]
     fn aim_at_player(&mut self) {
         let target = self.target;
+        //self.initial_target = target;
+        //godot_print!("2. updatetd target {}", target.to_string()); //debug
 
         self.base_mut().look_at(target);
 
@@ -75,7 +89,17 @@ impl Mob {
         let mut rng = rand::thread_rng();
         let range = { rng.gen_range(self.min_speed..self.max_speed) };
         self.velocity = Vector2::new(range, 0.0).rotated(real::from_f32(direction));
+        let velocity = self.velocity;
+        self.base_mut().set_linear_velocity(velocity);
         self.is_aiming = true;
+
+        self.aiming_direction = velocity;
+        self.initial_direction = velocity;
+    }
+
+    #[func]
+    pub fn on_game_over_despawn(&mut self) {
+        self.base_mut().queue_free();
     }
 }
 
@@ -89,6 +113,8 @@ impl IRigidBody2D for Mob {
             velocity: Vector2::new(0.0, 0.0),
             is_aiming: false,
             target: Vector2::new(0.0, 0.0),
+            aiming_direction: Vector2::new(0.0, 0.0),
+            initial_direction: Vector2::new(0.0, 0.0),
             base,
         }
     }
@@ -115,25 +141,48 @@ impl IRigidBody2D for Mob {
             .get_root()
             .unwrap()
             .get_node_as::<player::Player>("Main/Player");
+
         player.connect(
             "send_player_position".into(),
             self.base().callable("update_target"),
         );
 
+        let mut hud = self
+            .base()
+            .get_tree()
+            .unwrap()
+            .get_root()
+            .unwrap()
+            .get_node_as::<hud::Hud>("Main/Hud");
+
+        hud.connect(
+            "stop_game".into(),
+            self.base().callable("on_game_over_despawn"),
+        );
+
         let target = player.get_position();
         self.target = target;
+
+        //godot_print!("1. initial target {}", target.to_string()); //debug
 
         self.aim_at_player();
     }
 
-    fn physics_process(&mut self, _delta: f64) {}
+    fn physics_process(&mut self, _delta: f64) {
+        let initial_force_divisor = Vector2::new(30.0, 30.0);
+        let aiming_force_divisor = Vector2::new(10.0, 10.0);
+        let aiming_direction = self.aiming_direction / aiming_force_divisor;
+        self.base_mut().apply_force(aiming_direction);
+        let initial_direction = self.initial_direction / initial_force_divisor;
+        self.base_mut().apply_force(initial_direction);
+    }
 
     fn integrate_forces(&mut self, mut _physics_state: Gd<PhysicsDirectBodyState2D>) {
         let target = self.target;
         self.base_mut().look_at(target);
 
-        let velocity = self.velocity;
-        self.base_mut().set_linear_velocity(velocity);
+        //let velocity = self.velocity;
+        //self.base_mut().set_linear_velocity(velocity);
     }
 
     fn input(&mut self, _event: Gd<InputEvent>) {
