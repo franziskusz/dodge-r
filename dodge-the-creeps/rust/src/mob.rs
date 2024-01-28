@@ -71,10 +71,10 @@ impl Mob {
         self.base_mut().queue_free();
     }
 
-    #[func]
-    pub fn set_velocity(&mut self, velocity: Vector2) {
-        self.velocity = velocity;
-    }
+    //#[func]
+    //pub fn set_velocity(&mut self, velocity: Vector2) {
+    //    self.velocity = velocity;
+    //}
 
     #[func]
     pub fn update_target(&mut self, player_position: Vector2) {

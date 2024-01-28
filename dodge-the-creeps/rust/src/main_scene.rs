@@ -203,20 +203,20 @@ impl Main {
         self.base_mut().add_child(mob_scene.clone().upcast());
 
         let mut mob = mob_scene.cast::<mob::Mob>();
-        let range = {
-            // Local scope to bind `mob` user object
-            let mob = mob.bind();
-            rng.gen_range(mob.min_speed..mob.max_speed)
-        };
+        //let range = {
+        // Local scope to bind `mob` user object
+        //    let mob = mob.bind();
+        //    rng.gen_range(mob.min_speed..mob.max_speed)
+        //};
 
         //let player = self.base().get_node_as::<player::Player>("Player");
         //let target = player.get_position();
 
-        let target = start_target;
+        //let target = start_target;
         //godot_print!("C target: {}", target.to_string()); //debug
 
-        mob.look_at(target);
-        let mob_direction = mob.get_position().angle_to_point(target);
+        //mob.look_at(target);
+        //let mob_direction = mob.get_position().angle_to_point(target);
 
         //mob.callable("set_velocity");
 
@@ -224,7 +224,7 @@ impl Main {
 
         //godot_print!("C mob_direction: {}", mob_direction.to_string()); //debug
 
-        mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(mob_direction)));
+        //mob.set_linear_velocity(Vector2::new(range, 0.0).rotated(real::from_f32(mob_direction)));
         //mob.add_constant_central_force(Vector2::new(range, 0.0).rotated(real::from_f32(direction)));
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
