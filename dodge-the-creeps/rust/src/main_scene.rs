@@ -8,6 +8,7 @@ use godot::prelude::*;
 
 use rand::Rng as _;
 //use std::f32::consts::PI;
+const FPS_LOWER_LIMT: f64 = 20.0;
 
 // Deriving GodotClass makes the class available to Godot
 #[derive(GodotClass)]
@@ -128,7 +129,7 @@ impl Main {
         godot_print!("mobs, fps: {},{}", mob_counter_string, fps_string);
 
         if self.is_safe {
-            if self.fps < 20.0 {
+            if self.fps < FPS_LOWER_LIMT {
                 //TODO make this accessible via main menu
                 godot_print!("fps limit");
                 self.base_mut()
