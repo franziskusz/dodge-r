@@ -154,11 +154,11 @@ impl Main {
 
     #[func]
     fn on_mob_timer_timeout(&mut self) {
-        let wave_size_float = self.wave_size as f64; //10 20 30 40 50
-        let spawn_intervall_length_float = self.spawn_intervall_length as f64; //5
-        let mob_spawns_per_second_float = self.mob_spawns_per_second as f64; //10
+        let wave_size_float = self.wave_size as f64;
+        let spawn_intervall_length_float = self.spawn_intervall_length as f64;
+        let mob_spawns_per_second_float = self.mob_spawns_per_second as f64;
 
-        let loop_var = wave_size_float / spawn_intervall_length_float; //2 4 6 8 10
+        let loop_var = wave_size_float / spawn_intervall_length_float;
         if loop_var < mob_spawns_per_second_float {
             self.wave_size += self.mob_spawns_per_second;
         } else {
