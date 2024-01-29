@@ -40,6 +40,9 @@ impl Main {
     #[signal]
     fn send_player_position(player_position: Vector2);
 
+    #[signal]
+    fn send_stats(second: i32, mobs_spawned: i64, fps: f64);
+
     #[func]
     fn game_over(&mut self) {
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
@@ -112,6 +115,14 @@ impl Main {
     fn on_score_timer_timeout(&mut self) {
         self.score += 1;
 
+        //let args = &[
+        //    self.score.to_variant(),
+        //    self.mob_counter.to_variant(),
+        //    self.fps.to_variant(),
+        //];
+
+        //self.base_mut().emit_signal("send_stats".into(), args);
+
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_score(self.score);
     }
@@ -124,9 +135,17 @@ impl Main {
         self.frames = 0;
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_fps(self.fps);
-        let fps_string: String = self.fps.to_string();
-        let mob_counter_string: String = self.mob_counter.to_string();
-        godot_print!("mobs, fps: {},{}", mob_counter_string, fps_string);
+        //let fps_string: String = self.fps.to_string();
+        //let mob_counter_string: String = self.mob_counter.to_string();
+        //godot_print!("mobs, fps: {},{}", mob_counter_string, fps_string); //debug
+
+        let args = &[
+            self.score.to_variant(),
+            self.mob_counter.to_variant(),
+            self.fps.to_variant(),
+        ];
+
+        self.base_mut().emit_signal("send_stats".into(), args);
 
         if self.is_safe {
             if self.fps < FPS_LOWER_LIMT {
