@@ -10,6 +10,8 @@ use rand::seq::SliceRandom;
 
 use rand::Rng as _;
 //use std::f32::consts::PI;
+const INITIAL_FORCE_DIVISOR: f32 = 35.0;
+const AIMING_FORCE_DIVISOR: f32 = 5.0;
 
 #[derive(GodotClass)]
 #[class(base=RigidBody2D)]
@@ -171,11 +173,11 @@ impl IRigidBody2D for Mob {
     }
 
     fn physics_process(&mut self, _delta: f64) {
-        let initial_force_divisor = Vector2::new(35.0, 35.0);
-        let aiming_force_divisor = Vector2::new(5.0, 5.0);
-        let aiming_direction = self.aiming_direction / aiming_force_divisor;
+        let initial_force_divisor_vec = Vector2::new(INITIAL_FORCE_DIVISOR, INITIAL_FORCE_DIVISOR);
+        let aiming_force_divisor_vec = Vector2::new(AIMING_FORCE_DIVISOR, AIMING_FORCE_DIVISOR);
+        let aiming_direction = self.aiming_direction / aiming_force_divisor_vec;
         self.base_mut().apply_force(aiming_direction);
-        let initial_direction = self.initial_direction / initial_force_divisor;
+        let initial_direction = self.initial_direction / initial_force_divisor_vec;
         self.base_mut().apply_force(initial_direction);
     }
 

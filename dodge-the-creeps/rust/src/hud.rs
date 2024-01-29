@@ -105,6 +105,8 @@ impl Hud {
         safe_mode_switch.hide();
         let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
         mob_spawn_slider.hide();
+        let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
+        spawn_intervall_slider.hide();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -123,6 +125,8 @@ impl Hud {
         safe_mode_switch.show();
         let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
         mob_spawn_slider.show();
+        let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
+        spawn_intervall_slider.show();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -166,12 +170,44 @@ impl Hud {
         let mut label = self
             .base()
             .get_node_as::<Label>("MobSpawnSlider/SliderLabel");
-        let mut label_text: String = "spawns/s ".to_owned();
+        //let mut label_text: String = "spawns/s ".to_owned();
         let mob_spawns_str: &str = &*mob_spawns.to_string();
 
-        label_text.push_str(mob_spawns_str);
+        //label_text.push_str(mob_spawns_str);
 
-        label.set_text(label_text.to_string().into());
+        label.set_text(mob_spawns_str.into());
+    }
+
+    #[func]
+    fn init_spawn_intervall_slider(&mut self) {
+        godot_print!("init spawn intervall slider"); //debug
+        let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
+        spawn_intervall_slider.set_use_rounded_values(true);
+        spawn_intervall_slider.set_min(1.0);
+        spawn_intervall_slider.set_max(60.0);
+        spawn_intervall_slider.set_ticks_on_borders(true);
+
+        spawn_intervall_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_spawn_intervall_number_label"),
+        );
+
+        self.update_spawn_intervall_number_label(1.0);
+    }
+
+    #[func]
+    fn update_spawn_intervall_number_label(&mut self, slider_value: f64) {
+        let spawn_intervall_length = slider_value as i64;
+
+        let mut label = self
+            .base()
+            .get_node_as::<Label>("SpawnIntervallSlider/SliderNumberLabel");
+        //let mut label_text: String = "spawns/s ".to_owned();
+        let spawn_intervall_str: &str = &*spawn_intervall_length.to_string();
+
+        //label_text.push_str(mob_spawns_str);
+
+        label.set_text(spawn_intervall_str.into());
     }
 }
 
@@ -183,5 +219,6 @@ impl ICanvasLayer for Hud {
 
     fn ready(&mut self) {
         self.init_mob_spawn_slider();
+        self.init_spawn_intervall_slider();
     }
 }

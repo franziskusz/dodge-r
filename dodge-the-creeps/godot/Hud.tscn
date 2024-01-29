@@ -101,33 +101,79 @@ text = "Stop"
 one_shot = true
 
 [node name="SafeModeSwitch" type="CheckButton" parent="."]
-offset_left = 40.0
-offset_top = 490.0
-offset_right = 446.0
-offset_bottom = 616.0
+offset_left = 1432.0
+offset_top = 820.0
+offset_right = 1838.0
+offset_bottom = 946.0
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 41
 text = "Safe Mode Off"
 expand_icon = true
 
 [node name="MobSpawnSlider" type="VSlider" parent="."]
-offset_left = 372.0
-offset_top = 680.0
-offset_right = 474.0
+offset_left = 369.0
+offset_top = 574.0
+offset_right = 471.0
 offset_bottom = 948.0
 
 [node name="SliderLabel" type="Label" parent="MobSpawnSlider"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = -322.0
-offset_top = 68.0
-offset_right = -145.0
-offset_bottom = 173.0
+offset_left = 105.0
+offset_top = 67.0
+offset_right = 166.0
+offset_bottom = 155.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 41
-text = "spawns/s"
+
+[node name="SliderTextLabel" type="Label" parent="MobSpawnSlider"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -334.0
+offset_top = 64.0
+offset_right = -157.0
+offset_bottom = 169.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 41
+text = "mob spawns
+per second"
+
+[node name="SpawnIntervallSlider" type="VSlider" parent="."]
+offset_left = 369.0
+offset_top = 244.0
+offset_right = 471.0
+offset_bottom = 450.0
+
+[node name="SliderTextLabel" type="Label" parent="SpawnIntervallSlider"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -348.0
+offset_top = 10.0
+offset_right = -126.0
+offset_bottom = 115.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 41
+text = "spawn intervall
+length in
+seconds"
+
+[node name="SliderNumberLabel" type="Label" parent="SpawnIntervallSlider"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 95.0
+offset_top = 23.0
+offset_right = 137.0
+offset_bottom = 91.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 41
 
 [connection signal="pressed" from="StartButton" to="." method="on_start_button_pressed"]
 [connection signal="pressed" from="StopButton" to="." method="on_stop_button_pressed"]

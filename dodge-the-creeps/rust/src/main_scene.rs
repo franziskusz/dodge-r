@@ -23,6 +23,8 @@ pub struct Main {
     fps: f64,
     is_safe: bool,
     mob_spawns_per_second: i64,
+    spawn_intervall_length: i64,
+    wave_size: i64,
     #[base]
     base: Base<Node>,
     #[export]
@@ -65,6 +67,9 @@ impl Main {
         self.mob_counter = 0;
         self.frames = 0;
 
+        let initial_wave_size = self.mob_spawns_per_second;
+        self.wave_size = initial_wave_size;
+
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         let hud = hud.bind_mut();
         hud.update_score(self.score);
@@ -88,7 +93,7 @@ impl Main {
     }
 
     #[func]
-    fn on_start_timer_timeout(&self) {
+    fn on_start_timer_timeout(&mut self) {
         let mut mob_timer = self.base().get_node_as::<Timer>("MobTimer");
         let mut score_timer = self.base().get_node_as::<Timer>("ScoreTimer");
         let mut fps_timer = self.base().get_node_as::<Timer>("FPSTimer");
@@ -96,6 +101,9 @@ impl Main {
         score_timer.start();
         fps_timer.set_wait_time(1.0);
         fps_timer.start();
+
+        let initial_wave_size = self.mob_spawns_per_second;
+        self.wave_size = initial_wave_size;
     }
 
     #[func]
@@ -146,12 +154,29 @@ impl Main {
 
     #[func]
     fn on_mob_timer_timeout(&mut self) {
-        let mut i = 0;
+        let wave_size_float = self.wave_size as f64; //10 20 30 40 50
+        let spawn_intervall_length_float = self.spawn_intervall_length as f64; //5
+        let mob_spawns_per_second_float = self.mob_spawns_per_second as f64; //10
 
-        while i < self.mob_spawns_per_second {
-            i = i + 1;
-            self.spawn_mob();
+        let loop_var = wave_size_float / spawn_intervall_length_float; //2 4 6 8 10
+        if loop_var < mob_spawns_per_second_float {
+            self.wave_size += self.mob_spawns_per_second;
+        } else {
+            let mut i = 0;
+            while i < self.wave_size {
+                i = i + 1;
+
+                self.spawn_mob();
+            }
+            self.wave_size = self.mob_spawns_per_second;
         }
+
+        //let mut j = 0;
+        //while j < self.mob_spawns_per_second {
+        //    j = j + 1;
+
+        //    self.spawn_mob();
+        //}
     }
 
     #[func]
@@ -220,6 +245,13 @@ impl Main {
         //godot_print!("mob spawns/s {}", mob_spawns.to_string()); //debug
     }
 
+    #[func]
+    pub fn update_spawn_intervall_length(&mut self, slider_value: f64) {
+        let intervall_length = slider_value as i64;
+        self.spawn_intervall_length = intervall_length;
+        //godot_print!("intervall length {}", intervall_length.to_string()); //debug
+    }
+
     fn music(&mut self) -> &mut AudioStreamPlayer {
         self.music.as_deref_mut().unwrap()
     }
@@ -241,6 +273,8 @@ impl INode for Main {
             fps: 0.0,
             is_safe: true,
             mob_spawns_per_second: 1,
+            spawn_intervall_length: 1,
+            wave_size: 0,
             player_position: Vector2::new(0.0, 0.0),
             base,
             music: None,
@@ -255,6 +289,7 @@ impl INode for Main {
         self.mob_scene = load("res://Mob.tscn");
         self.music = Some(self.base().get_node_as("Music"));
         self.death_sound = Some(self.base().get_node_as("DeathSound"));
+
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.connect(
             "safe_mode_switch".into(),
@@ -265,6 +300,14 @@ impl INode for Main {
         mob_spawn_slider.connect(
             "value_changed".into(),
             self.base().callable("update_mob_spawn_rate"),
+        );
+
+        let mut spawn_intervall_slider = self
+            .base()
+            .get_node_as::<Slider>("Hud/SpawnIntervallSlider");
+        spawn_intervall_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_spawn_intervall_length"),
         );
 
         let mut player = self.base().get_node_as::<player::Player>("Player");
