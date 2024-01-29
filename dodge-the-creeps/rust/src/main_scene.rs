@@ -101,6 +101,7 @@ impl Main {
         score_timer.start();
         fps_timer.set_wait_time(1.0);
         fps_timer.start();
+        self.frames = 0;
 
         let initial_wave_size = self.mob_spawns_per_second;
         self.wave_size = initial_wave_size;
