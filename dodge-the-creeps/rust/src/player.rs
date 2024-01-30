@@ -1,4 +1,6 @@
-use godot::engine::{AnimatedSprite2D, Area2D, CollisionShape2D, IArea2D, PhysicsBody2D};
+use crate::hud;
+
+use godot::engine::{AnimatedSprite2D, Area2D, CollisionShape2D, IArea2D, PhysicsBody2D, Timer};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
@@ -8,6 +10,8 @@ pub struct Player {
     screen_size: Vector2,
     //movement_delta: Vector2,
     input_position: Vector2,
+    is_bot: bool,
+    bot_direction: Vector2,
     #[export]
     position: Vector2,
 
@@ -47,6 +51,41 @@ impl Player {
             .get_node_as::<CollisionShape2D>("CollisionShape2D");
 
         collision_shape.set_disabled(false);
+
+        if self.is_bot {
+            let mut bot_timer = self.base().get_node_as::<Timer>("BotTimer");
+            bot_timer.set_wait_time(2.0);
+            bot_timer.connect(
+                "timeout".into(),
+                self.base().callable("update_bot_direction"),
+            );
+            bot_timer.start();
+        }
+    }
+
+    #[func]
+    pub fn despawn(&mut self) {
+        self.base_mut().hide();
+    }
+
+    #[func]
+    fn update_bot_mode(&mut self, bot_mode: bool) {
+        self.is_bot = bot_mode;
+    }
+
+    #[func]
+    fn update_bot_direction(&mut self) {
+        if self.bot_direction == Vector2::UP {
+            self.bot_direction = Vector2::RIGHT
+        } else if self.bot_direction == Vector2::RIGHT {
+            self.bot_direction = Vector2::DOWN
+        } else if self.bot_direction == Vector2::DOWN {
+            self.bot_direction = Vector2::LEFT
+        } else if self.bot_direction == Vector2::LEFT {
+            self.bot_direction = Vector2::UP
+        } else {
+            self.bot_direction = Vector2::UP
+        }
     }
 }
 
@@ -59,6 +98,8 @@ impl IArea2D for Player {
             //movement_delta: Vector2::new(0.0, 0.0),
             input_position: Vector2::new(0.0, 0.0),
             position: Vector2::new(0.0, 0.0),
+            is_bot: false,
+            bot_direction: Vector2::new(-0.5, 0.2),
             base,
         }
     }
@@ -67,6 +108,20 @@ impl IArea2D for Player {
         let viewport = self.base().get_viewport_rect();
         self.screen_size = viewport.size;
         self.base_mut().hide();
+
+        let mut hud = self
+            .base()
+            .get_tree()
+            .unwrap()
+            .get_root()
+            .unwrap()
+            .get_node_as::<hud::Hud>("Main/Hud");
+        hud.connect(
+            "bot_player_switch".into(),
+            self.base().callable("update_bot_mode"),
+        );
+
+        hud.connect("stop_game".into(), self.base().callable("despawn"));
     }
 
     fn process(&mut self, delta: f64) {
@@ -75,6 +130,10 @@ impl IArea2D for Player {
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
 
         let mut velocity = Vector2::new(0.0, 0.0);
+
+        if self.is_bot {
+            velocity += self.bot_direction;
+        }
 
         // Note: exact=false by default, in Rust we have to provide it explicitly
         let input = Input::singleton();

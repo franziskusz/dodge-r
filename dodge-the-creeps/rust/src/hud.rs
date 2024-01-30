@@ -5,6 +5,7 @@ use godot::prelude::*;
 #[class(base=CanvasLayer)]
 pub struct Hud {
     is_safe: bool,
+    is_bot_player: bool,
     #[base]
     base: Base<CanvasLayer>,
 }
@@ -18,7 +19,10 @@ impl Hud {
     fn stop_game();
 
     #[signal]
-    fn safe_mode_switch();
+    fn safe_mode_switch(is_safe: bool);
+
+    #[signal]
+    fn bot_player_switch(is_bot_player: bool);
 
     #[signal]
     fn mob_spawn_rate(mob_spawn_rate: i64);
@@ -108,6 +112,8 @@ impl Hud {
         mob_spawn_slider.hide();
         let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
         spawn_intervall_slider.hide();
+        let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
+        bot_player_switch.hide();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -128,6 +134,8 @@ impl Hud {
         mob_spawn_slider.show();
         let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
         spawn_intervall_slider.show();
+        let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
+        bot_player_switch.show();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -152,6 +160,33 @@ impl Hud {
         let mut button = self.base().get_node_as::<CheckButton>("SafeModeSwitch");
         let mut button_text: String = "safe mode: ".to_owned();
         let mode: &str = &*self.is_safe.to_string();
+
+        button_text.push_str(mode);
+
+        button.set_text(button_text.to_string().into());
+    }
+
+    #[func]
+    fn init_bot_player_switch(&mut self) {
+        godot_print!("init bot player switch");
+        let mut button = self.base().get_node_as::<CheckButton>("BotPlayerSwitch");
+        button.connect(
+            "pressed".into(),
+            self.base().callable("on_bot_player_switch"),
+        );
+    }
+
+    #[func]
+    fn on_bot_player_switch(&mut self) {
+        self.is_bot_player = !self.is_bot_player;
+        let args = &[self.is_bot_player.to_variant()];
+
+        self.base_mut()
+            .emit_signal("bot_player_switch".into(), args);
+
+        let mut button = self.base().get_node_as::<CheckButton>("BotPlayerSwitch");
+        let mut button_text: String = "bot player: ".to_owned();
+        let mode: &str = &*self.is_bot_player.to_string();
 
         button_text.push_str(mode);
 
@@ -228,6 +263,7 @@ impl ICanvasLayer for Hud {
     fn init(base: Base<Self::Base>) -> Self {
         Hud {
             is_safe: true,
+            is_bot_player: false,
             base,
         }
     }
@@ -235,5 +271,6 @@ impl ICanvasLayer for Hud {
     fn ready(&mut self) {
         self.init_mob_spawn_slider();
         self.init_spawn_intervall_slider();
+        self.init_bot_player_switch();
     }
 }
