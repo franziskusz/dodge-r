@@ -142,6 +142,7 @@ impl Main {
         let args = &[
             self.score.to_variant(),
             self.mob_counter.to_variant(),
+            self.hits.to_variant(),
             self.fps.to_variant(),
         ];
 
