@@ -22,7 +22,6 @@ pub struct Main {
     mob_counter: i64,
     frames: i64,
     fps: f64,
-    is_safe: bool,
     mob_spawns_per_second: i64,
     spawn_intervall_length: i64,
     wave_size: i64,
@@ -30,6 +29,7 @@ pub struct Main {
     base: Base<Node>,
     #[export]
     player_position: Vector2,
+    is_safe: bool,
 }
 
 #[godot_api]
@@ -246,8 +246,8 @@ impl Main {
     }
 
     #[func]
-    fn switch_safe_mode(&mut self) {
-        self.is_safe = !self.is_safe;
+    fn switch_safe_mode(&mut self, safe_mode: bool) {
+        self.is_safe = safe_mode;
         godot_print!("safemode: {}", self.is_safe.to_string());
     }
 

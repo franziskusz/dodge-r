@@ -107,7 +107,7 @@ offset_right = 1838.0
 offset_bottom = 946.0
 theme_override_fonts/font = ExtResource("1_poxll")
 theme_override_font_sizes/font_size = 41
-text = "Safe Mode Off"
+text = "safe mode: true"
 expand_icon = true
 
 [node name="MobSpawnSlider" type="VSlider" parent="."]

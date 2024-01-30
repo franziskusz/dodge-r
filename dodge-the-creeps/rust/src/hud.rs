@@ -1,9 +1,10 @@
-use godot::engine::{Button, CanvasLayer, ICanvasLayer, Label, Slider, Timer};
+use godot::engine::{Button, CanvasLayer, CheckButton, ICanvasLayer, Label, Slider, Timer};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
 #[class(base=CanvasLayer)]
 pub struct Hud {
+    is_safe: bool,
     #[base]
     base: Base<CanvasLayer>,
 }
@@ -143,7 +144,18 @@ impl Hud {
 
     #[func]
     fn on_safe_mode_switch(&mut self) {
-        self.base_mut().emit_signal("safe_mode_switch".into(), &[]);
+        self.is_safe = !self.is_safe;
+        let args = &[self.is_safe.to_variant()];
+
+        self.base_mut().emit_signal("safe_mode_switch".into(), args);
+
+        let mut button = self.base().get_node_as::<CheckButton>("SafeModeSwitch");
+        let mut button_text: String = "safe mode: ".to_owned();
+        let mode: &str = &*self.is_safe.to_string();
+
+        button_text.push_str(mode);
+
+        button.set_text(button_text.to_string().into());
     }
 
     #[func]
@@ -214,7 +226,10 @@ impl Hud {
 #[godot_api]
 impl ICanvasLayer for Hud {
     fn init(base: Base<Self::Base>) -> Self {
-        Self { base }
+        Hud {
+            is_safe: true,
+            base,
+        }
     }
 
     fn ready(&mut self) {
