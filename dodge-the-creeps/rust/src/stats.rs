@@ -2,8 +2,9 @@ use crate::main_scene;
 use godot::engine::{performance::Monitor, Performance};
 use godot::prelude::*;
 use std::time::SystemTime;
+use std::{error::Error, fs::OpenOptions, process};
 
-//use csv::Writer as _;
+use csv;
 
 #[derive(GodotClass)]
 #[class(base=Node)]
@@ -14,6 +15,7 @@ pub struct Stats {
     hits: i64,
     fps: i32,
     memory_static: f64,
+    timestamp_nanos: u128,
 
     #[base]
     base: Base<Node>,
@@ -32,11 +34,11 @@ impl Stats {
         let duration_since_epoch = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap();
-        let timestamp_nanos = duration_since_epoch.as_nanos();
+        self.timestamp_nanos = duration_since_epoch.as_nanos();
 
         godot_print!(
             "ts, second, mobs, hits, fps, memory {},{},{},{},{},{}",
-            timestamp_nanos.to_string(),
+            self.timestamp_nanos.to_string(),
             self.second.to_string(),
             self.mobs_spawned.to_string(),
             self.hits.to_string(),
@@ -45,10 +47,34 @@ impl Stats {
         ); //debug
 
         // call write_to_csv()
+        if let Err(err) = self.write_to_csv() {
+            godot_print!("{}", err);
+            process::exit(1);
+        }
     }
 
-    #[func]
-    fn write_to_csv() {
+    fn write_to_csv(&mut self) -> Result<(), Box<dyn Error>> {
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(true)
+            .open("stats/stats.csv")
+            .unwrap();
+        let mut writer = csv::Writer::from_writer(file);
+
+        let args = &[
+            self.timestamp_nanos.to_string(),
+            self.second.to_string(),
+            self.mobs_spawned.to_string(),
+            self.hits.to_string(),
+            self.fps.to_string(),
+            self.memory_static.to_string(),
+        ];
+
+        writer.write_record(args)?;
+
+        writer.flush()?;
+        Ok(())
         //write local vars to csv file
     }
 }
@@ -63,6 +89,7 @@ impl INode for Stats {
             hits: 0,
             fps: 0,
             memory_static: 0.0,
+            timestamp_nanos: 0,
             base,
         }
     }
