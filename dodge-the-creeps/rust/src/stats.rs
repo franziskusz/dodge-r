@@ -1,6 +1,7 @@
 use crate::main_scene;
 use godot::engine::{performance::Monitor, Performance};
 use godot::prelude::*;
+use std::time::SystemTime;
 
 //use csv::Writer as _;
 
@@ -28,9 +29,14 @@ impl Stats {
         self.fps = fps as i32;
         let memory_monitor: Monitor = Monitor::MEMORY_STATIC;
         self.memory_static = self.performance.get_monitor(memory_monitor);
+        let duration_since_epoch = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
+        let timestamp_nanos = duration_since_epoch.as_nanos();
 
         godot_print!(
-            "second, mobs, hits, fps, memory {},{},{},{},{}",
+            "ts, second, mobs, hits, fps, memory {},{},{},{},{},{}",
+            timestamp_nanos.to_string(),
             self.second.to_string(),
             self.mobs_spawned.to_string(),
             self.hits.to_string(),
