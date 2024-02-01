@@ -1,8 +1,8 @@
 use crate::main_scene;
-use godot::engine::{performance::Monitor, Performance};
+use godot::engine::{performance::Monitor, Performance, ProjectSettings};
 use godot::prelude::*;
 use std::time::SystemTime;
-use std::{error::Error, fs::OpenOptions, process};
+use std::{error::Error, fs::OpenOptions, process, str::FromStr};
 
 use csv;
 
@@ -10,6 +10,7 @@ use csv;
 #[class(base=Node)]
 pub struct Stats {
     performance: Gd<Performance>,
+    project_setting: Gd<ProjectSettings>,
     second: i64,
     mobs_spawned: i64,
     hits: i64,
@@ -54,13 +55,20 @@ impl Stats {
     }
 
     fn write_to_csv(&mut self) -> Result<(), Box<dyn Error>> {
-        //let project_setting: Gd<ProjectSettings> =
+        let path = "user://stats/stats.csv";
+        let path_gstring = GString::from_str(path).unwrap();
+        let path_globalised = self
+            .project_setting
+            .globalize_path(path_gstring)
+            .to_string();
+
+        //godot_print!("{}", path_globalised); debug
 
         let file = OpenOptions::new()
             .write(true)
             .create(true)
             .append(true)
-            .open("stats/stats.csv")
+            .open(path_globalised)
             .unwrap();
         let mut writer = csv::Writer::from_writer(file);
 
@@ -86,6 +94,7 @@ impl INode for Stats {
     fn init(base: Base<Node>) -> Self {
         Stats {
             performance: Performance::singleton(),
+            project_setting: ProjectSettings::singleton(),
             second: 0,
             mobs_spawned: 0,
             hits: 0,
