@@ -17,3 +17,7 @@ members = [
     # utils
     "godot-fmt",
 ]
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
