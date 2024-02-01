@@ -41,7 +41,7 @@ impl Main {
     fn send_player_position(player_position: Vector2);
 
     #[signal]
-    fn send_stats(second: i32, mobs_spawned: i64, fps: f64);
+    fn send_stats(second: i32, mobs_spawned: i64, hits: i64, fps: f64);
 
     #[func]
     fn game_over(&mut self) {
@@ -238,13 +238,14 @@ impl Main {
         self.update_mob_counter(1);
 
         mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
+        //remove
     }
 
-    #[func]
-    fn on_mob_despawn(&mut self) {
-        self.update_mob_counter(-1);
-        self.spawn_mob();
-    }
+    //#[func]
+    //fn on_mob_despawn(&mut self) {
+    //    self.update_mob_counter(-1);
+    //    self.spawn_mob();
+    //}
 
     #[func]
     fn switch_safe_mode(&mut self, safe_mode: bool) {
