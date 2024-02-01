@@ -54,6 +54,8 @@ impl Stats {
     }
 
     fn write_to_csv(&mut self) -> Result<(), Box<dyn Error>> {
+        //let project_setting: Gd<ProjectSettings> =
+
         let file = OpenOptions::new()
             .write(true)
             .create(true)
