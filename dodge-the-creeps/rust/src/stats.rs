@@ -2,7 +2,7 @@ use crate::main_scene;
 use godot::engine::{performance::Monitor, Performance, ProjectSettings};
 use godot::prelude::*;
 use std::time::SystemTime;
-use std::{error::Error, fs::OpenOptions, process, str::FromStr};
+use std::{error::Error, fs, fs::OpenOptions, path::Path, process, str::FromStr};
 
 use csv;
 
@@ -87,6 +87,21 @@ impl Stats {
         Ok(())
         //write local vars to csv file
     }
+
+    fn make_stats_dir_if_not_exists(&mut self) -> Result<(), Box<dyn Error>> {
+        let path = "user://stats/";
+        let path_gstring = GString::from_str(path).unwrap();
+        let path_globalised = &self
+            .project_setting
+            .globalize_path(path_gstring)
+            .to_string();
+        if !Path::new(path_globalised).exists() {
+            fs::create_dir(path_globalised)?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[godot_api]
@@ -115,5 +130,11 @@ impl INode for Stats {
             .unwrap()
             .get_node_as::<main_scene::Main>("Main");
         main_scene.connect("send_stats".into(), self.base().callable("update_stats"));
+
+        //create stats dir if not already existent
+        if let Err(err) = self.make_stats_dir_if_not_exists() {
+            godot_print!("{}", err);
+            process::exit(1);
+        }
     }
 }
