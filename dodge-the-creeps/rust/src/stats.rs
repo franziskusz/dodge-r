@@ -67,7 +67,7 @@ impl Stats {
         let file = OpenOptions::new()
             .write(true)
             .create(true)
-            .append(true)
+            .append(true) //remove this option if file is ought to be truncated every run
             .open(path_globalised)
             .unwrap();
         let mut writer = csv::Writer::from_writer(file);
@@ -121,7 +121,6 @@ impl INode for Stats {
     }
 
     fn ready(&mut self) {
-        godot_print!("stats ready");
         let mut main_scene = self
             .base()
             .get_tree()
@@ -136,5 +135,6 @@ impl INode for Stats {
             godot_print!("{}", err);
             process::exit(1);
         }
+        godot_print!("stats ready");
     }
 }
