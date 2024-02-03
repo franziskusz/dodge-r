@@ -2,9 +2,15 @@ use crate::main_scene;
 use godot::engine::{performance::Monitor, Performance, ProjectSettings};
 use godot::prelude::*;
 use std::time::SystemTime;
-use std::{error::Error, fs, fs::OpenOptions, path::Path, process, str::FromStr};
+use std::{
+    error::Error, fs, fs::File, fs::OpenOptions, io::Write, path::Path, process, str::FromStr,
+};
 
 use csv;
+
+pub struct Writer<W: Write> {
+    writer: csv::Writer<W>,
+}
 
 #[derive(GodotClass)]
 #[class(base=Node)]
@@ -88,6 +94,25 @@ impl Stats {
         //write local vars to csv file
     }
 
+    fn write_to_csv_better<W: Write>(
+        &mut self,
+        writer: &mut csv::Writer<W>,
+    ) -> Result<(), Box<dyn Error>> {
+        let args = &[
+            self.timestamp_nanos.to_string(),
+            self.second.to_string(),
+            self.mobs_spawned.to_string(),
+            self.hits.to_string(),
+            self.fps.to_string(),
+            self.memory_static.to_string(),
+        ];
+
+        writer.write_record(args)?;
+
+        writer.flush()?;
+        Ok(())
+    }
+
     fn make_stats_dir_if_not_exists(&mut self) -> Result<(), Box<dyn Error>> {
         let path = "user://stats/";
         let path_gstring = GString::from_str(path).unwrap();
@@ -135,6 +160,43 @@ impl INode for Stats {
             godot_print!("{}", err);
             process::exit(1);
         }
+
+        let path = "user://stats/stats.csv";
+        let path_gstring = GString::from_str(path).unwrap();
+        let path_globalised = self
+            .project_setting
+            .globalize_path(path_gstring)
+            .to_string();
+
+        //godot_print!("{}", path_globalised); debug
+
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(true) //remove this option if file is ought to be truncated every run
+            .open(path_globalised)
+            .unwrap();
+
+        let writer_struct = Writer {
+            writer: csv::Writer::from_writer(file),
+        };
+
+        static PATH: &str = "user://stats/stats.csv";
+        let path_gstring: GString = GString::from_str(PATH).unwrap();
+        let path_globalised: String = self
+            .project_setting
+            .globalize_path(path_gstring)
+            .to_string();
+        static mut PATH_GLOBALISED: String = path_globalised;
+
+        static FILE: File = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(true) //remove this option if file is ought to be truncated every run
+            .open(path_globalised)
+            .unwrap();
+        static mut WRITER: Writer<W> = csv::Writer::from_writer(FILE);
+
         godot_print!("stats ready");
     }
 }
