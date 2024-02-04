@@ -108,10 +108,10 @@ impl Hud {
         stop_button.show();
         let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
         safe_mode_switch.hide();
-        let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
-        mob_spawn_slider.hide();
-        let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
-        spawn_intervall_slider.hide();
+        //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
+        //mob_spawn_slider.hide();
+        //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
+        //spawn_intervall_slider.hide();
         let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
         bot_player_switch.hide();
 
@@ -130,10 +130,10 @@ impl Hud {
         start_button.show();
         let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
         safe_mode_switch.show();
-        let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
-        mob_spawn_slider.show();
-        let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
-        spawn_intervall_slider.show();
+        //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
+        //mob_spawn_slider.show();
+        //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
+        //spawn_intervall_slider.show();
         let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
         bot_player_switch.show();
 
@@ -223,6 +223,8 @@ impl Hud {
         //label_text.push_str(mob_spawns_str);
 
         label.set_text(mob_spawns_str.into());
+        let mut slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
+        slider.release_focus();
     }
 
     #[func]
@@ -255,6 +257,9 @@ impl Hud {
         //label_text.push_str(mob_spawns_str);
 
         label.set_text(spawn_intervall_str.into());
+
+        let mut slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
+        slider.release_focus();
     }
 }
 
