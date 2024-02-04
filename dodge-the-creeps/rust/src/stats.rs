@@ -78,7 +78,6 @@ impl Stats {
             self.mobs_spawned.to_string(),
             self.hits.to_string(),
             self.fps.to_string(),
-            self.memory_static.to_string(),
         ];
 
         writer.write_record(args)?;
