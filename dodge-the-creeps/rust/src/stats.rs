@@ -30,7 +30,7 @@ impl Stats {
         self.mobs_spawned = mobs_spawned;
         self.hits = hits;
         self.fps = fps as i32;
-        let memory_monitor: Monitor = Monitor::MEMORY_STATIC;
+        let memory_monitor: Monitor = Monitor::MEMORY_STATIC; //TODO remove memory tracking alltogether since its beeing tracked in the system-monitor
         self.memory_static = self.performance.get_monitor(memory_monitor);
         let duration_since_epoch = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -68,9 +68,19 @@ impl Stats {
             .write(true)
             .create(true)
             .append(true) //remove this option if file is ought to be truncated every run
-            .open(path_globalised)
+            .open(path_globalised.clone())
             .unwrap();
+
+        let file_size = fs::metadata(path_globalised)
+            .expect("file metadata not found")
+            .len();
+
         let mut writer = csv::Writer::from_writer(file);
+
+        if file_size == 0 {
+            let header = &["timestamp", "second", "mob_spawned", "hits", "fps"];
+            writer.write_record(header)?;
+        }
 
         let args = &[
             self.timestamp_micros.to_string(),
