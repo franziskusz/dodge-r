@@ -16,7 +16,7 @@ pub struct Stats {
     hits: i64,
     fps: i32,
     memory_static: f64,
-    timestamp_nanos: u128,
+    timestamp_micros: u128,
 
     #[base]
     base: Base<Node>,
@@ -35,11 +35,11 @@ impl Stats {
         let duration_since_epoch = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap();
-        self.timestamp_nanos = duration_since_epoch.as_nanos();
+        self.timestamp_micros = duration_since_epoch.as_micros();
 
         godot_print!(
             "ts, second, mobs, hits, fps, memory {},{},{},{},{},{}",
-            self.timestamp_nanos.to_string(),
+            self.timestamp_micros.to_string(),
             self.second.to_string(),
             self.mobs_spawned.to_string(),
             self.hits.to_string(),
@@ -73,7 +73,7 @@ impl Stats {
         let mut writer = csv::Writer::from_writer(file);
 
         let args = &[
-            self.timestamp_nanos.to_string(),
+            self.timestamp_micros.to_string(),
             self.second.to_string(),
             self.mobs_spawned.to_string(),
             self.hits.to_string(),
@@ -115,7 +115,7 @@ impl INode for Stats {
             hits: 0,
             fps: 0,
             memory_static: 0.0,
-            timestamp_nanos: 0,
+            timestamp_micros: 0,
             base,
         }
     }
