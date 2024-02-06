@@ -2,20 +2,20 @@
 resolver = "2"
 
 members = [
-    "godot-bindings",
-    "godot-codegen",
-    "godot-ffi",
-    "godot-core",
-    "godot-macros",
-    "godot-cell",
-    "godot",
+    "gdext/godot-bindings",
+    "gdext/godot-codegen",
+    "gdext/godot-ffi",
+    "gdext/godot-core",
+    "gdext/godot-macros",
+    "gdext/godot-cell",
+    "gdext/godot",
     "dodge-the-creeps/rust",
 
     # Godot integration
-    "itest/rust",
+    "gdext/itest/rust",
 
     # utils
-    "godot-fmt",
+    "gdext/godot-fmt",
 ]
 
 [profile.release]

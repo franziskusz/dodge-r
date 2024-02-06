@@ -78,7 +78,7 @@ impl Stats {
         let mut writer = csv::Writer::from_writer(file);
 
         if file_size == 0 {
-            let header = &["timestamp", "second", "mob_spawned", "hits", "fps"];
+            let header = &["timestamp", "second", "mobs_spawned", "hits", "fps"];
             writer.write_record(header)?;
         }
 
