@@ -25,6 +25,7 @@ pub struct Main {
     mob_spawns_per_second: i64,
     spawn_intervall_length: i64,
     wave_size: i64,
+    initial_wave_size: i64,
     #[base]
     base: Base<Node>,
     #[export]
@@ -107,8 +108,13 @@ impl Main {
         fps_timer.start();
         self.frames = 0;
 
-        let initial_wave_size = self.mob_spawns_per_second;
-        self.wave_size = initial_wave_size;
+        let first_wave_size = self.mob_spawns_per_second;
+        self.wave_size = first_wave_size;
+
+        while self.initial_wave_size > 0 {
+            self.spawn_mob();
+            self.initial_wave_size -= 1;
+        }
     }
 
     #[func]
@@ -275,6 +281,13 @@ impl Main {
         //godot_print!("intervall length {}", intervall_length.to_string()); //debug
     }
 
+    #[func]
+    pub fn update_initial_wave_size(&mut self, slider_value: f64) {
+        let initial_wave_size = slider_value as i64;
+        self.initial_wave_size = initial_wave_size;
+        godot_print!("initial wave size: {}", initial_wave_size.to_string()); //debug
+    }
+
     fn music(&mut self) -> &mut AudioStreamPlayer {
         self.music.as_deref_mut().unwrap()
     }
@@ -298,6 +311,7 @@ impl INode for Main {
             mob_spawns_per_second: 1,
             spawn_intervall_length: 1,
             wave_size: 0,
+            initial_wave_size: 0,
             player_position: Vector2::new(0.0, 0.0),
             base,
             music: None,
@@ -331,6 +345,12 @@ impl INode for Main {
         spawn_intervall_slider.connect(
             "value_changed".into(),
             self.base().callable("update_spawn_intervall_length"),
+        );
+
+        let mut initial_wave_slider = self.base().get_node_as::<Slider>("Hud/InitialWaveSlider");
+        initial_wave_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_initial_wave_size"),
         );
 
         let mut player = self.base().get_node_as::<player::Player>("Player");

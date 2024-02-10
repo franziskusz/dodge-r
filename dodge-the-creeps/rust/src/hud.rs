@@ -114,6 +114,8 @@ impl Hud {
         //spawn_intervall_slider.hide();
         let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
         bot_player_switch.hide();
+        let mut initial_wave_slider = self.base().get_node_as::<Slider>("InitialWaveSlider");
+        initial_wave_slider.hide();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -136,6 +138,8 @@ impl Hud {
         //spawn_intervall_slider.show();
         let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
         bot_player_switch.show();
+        let mut initial_wave_slider = self.base().get_node_as::<Slider>("InitialWaveSlider");
+        initial_wave_slider.show();
 
         // Note: this works only because `start_game` is a deferred signal.
         // This method keeps a &mut Hud, and start_game calls Main::new_game(), which itself accesses this Hud
@@ -217,10 +221,7 @@ impl Hud {
         let mut label = self
             .base()
             .get_node_as::<Label>("MobSpawnSlider/SliderLabel");
-        //let mut label_text: String = "spawns/s ".to_owned();
         let mob_spawns_str: &str = &*mob_spawns.to_string();
-
-        //label_text.push_str(mob_spawns_str);
 
         label.set_text(mob_spawns_str.into());
         let mut slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
@@ -251,14 +252,43 @@ impl Hud {
         let mut label = self
             .base()
             .get_node_as::<Label>("SpawnIntervallSlider/SliderNumberLabel");
-        //let mut label_text: String = "spawns/s ".to_owned();
         let spawn_intervall_str: &str = &*spawn_intervall_length.to_string();
-
-        //label_text.push_str(mob_spawns_str);
 
         label.set_text(spawn_intervall_str.into());
 
         let mut slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
+        slider.release_focus();
+    }
+
+    #[func]
+    fn init_initial_wave_slider(&mut self) {
+        godot_print!("init initial wave slider"); //debug
+        let mut initial_wave_slider = self.base().get_node_as::<Slider>("InitialWaveSlider");
+        initial_wave_slider.set_use_rounded_values(true);
+        initial_wave_slider.set_min(0.0);
+        initial_wave_slider.set_max(1000.0);
+        initial_wave_slider.set_ticks_on_borders(true);
+
+        initial_wave_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_initial_wave_number_label"),
+        );
+
+        self.update_initial_wave_number_label(0.0);
+    }
+
+    #[func]
+    fn update_initial_wave_number_label(&mut self, slider_value: f64) {
+        let spawn_intervall_length = slider_value as i64;
+
+        let mut label = self
+            .base()
+            .get_node_as::<Label>("InitialWaveSlider/SliderNumberLabel");
+        let initial_wave_str: &str = &*spawn_intervall_length.to_string();
+
+        label.set_text(initial_wave_str.into());
+
+        let mut slider = self.base().get_node_as::<Slider>("InitialWaveSlider");
         slider.release_focus();
     }
 }
@@ -277,5 +307,6 @@ impl ICanvasLayer for Hud {
         self.init_mob_spawn_slider();
         self.init_spawn_intervall_slider();
         self.init_bot_player_switch();
+        self.init_initial_wave_slider();
     }
 }
