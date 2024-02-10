@@ -111,9 +111,10 @@ impl Main {
         let first_wave_size = self.mob_spawns_per_second;
         self.wave_size = first_wave_size;
 
-        while self.initial_wave_size > 0 {
+        let mut i = self.initial_wave_size;
+        while i > 0 {
             self.spawn_mob();
-            self.initial_wave_size -= 1;
+            i -= 1;
         }
     }
 
