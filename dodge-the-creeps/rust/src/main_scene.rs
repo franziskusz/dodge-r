@@ -286,7 +286,7 @@ impl Main {
     pub fn update_initial_wave_size(&mut self, slider_value: f64) {
         let initial_wave_size = slider_value as i64;
         self.initial_wave_size = initial_wave_size;
-        godot_print!("initial wave size: {}", initial_wave_size.to_string()); //debug
+        //godot_print!("initial wave size: {}", initial_wave_size.to_string()); //debug
     }
 
     fn music(&mut self) -> &mut AudioStreamPlayer {

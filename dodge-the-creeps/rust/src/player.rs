@@ -54,12 +54,8 @@ impl Player {
 
         if self.is_bot {
             let mut bot_timer = self.base().get_node_as::<Timer>("BotTimer");
-            bot_timer.set_wait_time(2.0);
-            bot_timer.connect(
-                "timeout".into(),
-                self.base().callable("update_bot_direction"),
-            );
             bot_timer.start();
+            self.bot_direction = Vector2::new(-0.4, 0.4);
         }
     }
 
@@ -87,44 +83,9 @@ impl Player {
             self.bot_direction = Vector2::UP
         }
     }
-}
 
-#[godot_api]
-impl IArea2D for Player {
-    fn init(base: Base<Area2D>) -> Self {
-        Player {
-            speed: 400.0,
-            screen_size: Vector2::new(0.0, 0.0),
-            //movement_delta: Vector2::new(0.0, 0.0),
-            input_position: Vector2::new(0.0, 0.0),
-            position: Vector2::new(0.0, 0.0),
-            is_bot: false,
-            bot_direction: Vector2::new(-0.5, 0.2),
-            base,
-        }
-    }
-
-    fn ready(&mut self) {
-        let viewport = self.base().get_viewport_rect();
-        self.screen_size = viewport.size;
-        self.base_mut().hide();
-
-        let mut hud = self
-            .base()
-            .get_tree()
-            .unwrap()
-            .get_root()
-            .unwrap()
-            .get_node_as::<hud::Hud>("Main/Hud");
-        hud.connect(
-            "bot_player_switch".into(),
-            self.base().callable("update_bot_mode"),
-        );
-
-        hud.connect("stop_game".into(), self.base().callable("despawn"));
-    }
-
-    fn process(&mut self, delta: f64) {
+    #[func]
+    fn handle_input(&mut self, delta: f64) {
         let mut animated_sprite = self
             .base()
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
@@ -149,10 +110,14 @@ impl IArea2D for Player {
         if input.is_action_pressed("move_up".into()) {
             velocity += Vector2::UP;
         }
+        //normalize only if length is over 1.0
+        if velocity.length() > 1.0 {
+            velocity = velocity.normalized() * self.speed;
+        } else if velocity.length() > 0.0 {
+            velocity = velocity * self.speed;
+        }
 
         if velocity.length() > 0.0 {
-            velocity = velocity.normalized() * self.speed;
-
             let animation;
 
             if velocity.x != 0.0 {
@@ -181,7 +146,8 @@ impl IArea2D for Player {
         }
     }
 
-    fn physics_process(&mut self, _delta: f64) {
+    #[func]
+    fn move_player(&mut self) {
         let latest_input_position = self.input_position;
 
         if self.position != latest_input_position {
@@ -192,5 +158,55 @@ impl IArea2D for Player {
             self.base_mut()
                 .emit_signal("send_player_position".into(), args);
         }
+    }
+}
+
+#[godot_api]
+impl IArea2D for Player {
+    fn init(base: Base<Area2D>) -> Self {
+        Player {
+            speed: 400.0,
+            screen_size: Vector2::new(0.0, 0.0),
+            //movement_delta: Vector2::new(0.0, 0.0),
+            input_position: Vector2::new(0.0, 0.0),
+            position: Vector2::new(0.0, 0.0),
+            is_bot: false,
+            bot_direction: Vector2::new(-0.4, 0.4),
+            base,
+        }
+    }
+
+    fn ready(&mut self) {
+        let viewport = self.base().get_viewport_rect();
+        self.screen_size = viewport.size;
+        self.base_mut().hide();
+
+        let mut hud = self
+            .base()
+            .get_tree()
+            .unwrap()
+            .get_root()
+            .unwrap()
+            .get_node_as::<hud::Hud>("Main/Hud");
+        hud.connect(
+            "bot_player_switch".into(),
+            self.base().callable("update_bot_mode"),
+        );
+
+        hud.connect("stop_game".into(), self.base().callable("despawn"));
+
+        let mut bot_timer = self.base().get_node_as::<Timer>("BotTimer");
+        bot_timer.set_wait_time(2.0);
+        bot_timer.connect(
+            "timeout".into(),
+            self.base().callable("update_bot_direction"),
+        );
+    }
+
+    fn process(&mut self, _delta: f64) {}
+
+    fn physics_process(&mut self, delta: f64) {
+        self.handle_input(delta);
+        self.move_player();
     }
 }
