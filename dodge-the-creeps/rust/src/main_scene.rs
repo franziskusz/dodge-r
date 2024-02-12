@@ -72,8 +72,8 @@ impl Main {
         self.mob_counter = 0;
         self.frames = 0;
 
-        let initial_wave_size = self.mob_spawns_per_second;
-        self.wave_size = initial_wave_size;
+        let wave_size = self.mob_spawns_per_second;
+        self.wave_size = wave_size;
 
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         let hud = hud.bind_mut();
@@ -107,9 +107,6 @@ impl Main {
         fps_timer.set_wait_time(1.0);
         fps_timer.start();
         self.frames = 0;
-
-        let first_wave_size = self.mob_spawns_per_second;
-        self.wave_size = first_wave_size;
 
         let mut i = self.initial_wave_size;
         while i > 0 {
