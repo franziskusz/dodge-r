@@ -59,6 +59,10 @@ impl Main {
 
         self.music().stop();
         self.death_sound().play();
+
+        //let mut background = self.base().get_node_as::<AnimatedSprite2D>("Background");
+
+        //background.stop();
     }
 
     #[func]
@@ -95,6 +99,10 @@ impl Main {
         hud.show_message("Get Ready".into());
 
         self.music().play();
+
+        //let mut background = self.base().get_node_as::<AnimatedSprite2D>("Background");
+
+        //background.play();
     }
 
     #[func]

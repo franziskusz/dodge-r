@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://f47ah8d5yi38"
-path="res://.godot/imported/enemyWalking_1.png-5af6eedbe61b701677d490ffdc1e6471.ctex"
+uid="uid://df38rmjncibhm"
+path="res://.godot/imported/small_complete_crab2up.png-e55afb84a3afb4a9ff3cecdbb5a33204.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/enemyWalking_1.png"
-dest_files=["res://.godot/imported/enemyWalking_1.png-5af6eedbe61b701677d490ffdc1e6471.ctex"]
+source_file="res://art/crab/small_complete_crab2up.png"
+dest_files=["res://.godot/imported/small_complete_crab2up.png-e55afb84a3afb4a9ff3cecdbb5a33204.ctex"]
 
 [params]
 

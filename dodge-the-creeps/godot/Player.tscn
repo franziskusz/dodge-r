@@ -1,18 +1,31 @@
-[gd_scene load_steps=12 format=3 uid="uid://4vwrqjegqwpj"]
+[gd_scene load_steps=14 format=3 uid="uid://4vwrqjegqwpj"]
 
-[ext_resource type="Texture2D" uid="uid://dftkoll65x7xm" path="res://art/playerGrey_walk1.png" id="2"]
-[ext_resource type="Texture2D" uid="uid://viy5bx2tm43f" path="res://art/playerGrey_walk2.png" id="3"]
-[ext_resource type="Texture2D" uid="uid://d30h02h4f7de7" path="res://art/playerGrey_up1.png" id="4"]
-[ext_resource type="Texture2D" uid="uid://c5flxsxmwolsm" path="res://art/playerGrey_up2.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://d3p1avlkciptf" path="res://art/crab/small_complete_crab2down.png" id="1_btrhh"]
+[ext_resource type="Texture2D" uid="uid://b5pfvj1g36lr7" path="res://art/crab/small_complete_crab1down.png" id="2_p1mog"]
+[ext_resource type="Texture2D" uid="uid://m6ubwk2gpymt" path="res://art/crab/small_complete_crab1right.png" id="3_rukxk"]
+[ext_resource type="Texture2D" uid="uid://kliroay3awct" path="res://art/crab/small_complete_crab2right.png" id="4_2gvwa"]
+[ext_resource type="Texture2D" uid="uid://ceq3l4e8h5emc" path="res://art/crab/small_complete_crab1up.png" id="5_w4kbv"]
+[ext_resource type="Texture2D" uid="uid://df38rmjncibhm" path="res://art/crab/small_complete_crab2up.png" id="6_yuhr0"]
 
 [sub_resource type="SpriteFrames" id="1"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("2")
+"texture": ExtResource("1_btrhh")
 }, {
 "duration": 1.0,
-"texture": ExtResource("3")
+"texture": ExtResource("2_p1mog")
+}],
+"loop": true,
+"name": &"down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_rukxk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_2gvwa")
 }],
 "loop": true,
 "name": &"right",
@@ -20,10 +33,10 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("4")
+"texture": ExtResource("5_w4kbv")
 }, {
 "duration": 1.0,
-"texture": ExtResource("5")
+"texture": ExtResource("6_yuhr0")
 }],
 "loop": true,
 "name": &"up",
@@ -57,7 +70,7 @@ visible = false
 z_index = 10
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-scale = Vector2(0.5, 0.5)
+scale = Vector2(0.7, 0.7)
 sprite_frames = SubResource("1")
 animation = &"right"
 
@@ -68,7 +81,7 @@ shape = SubResource("2")
 z_index = -1
 amount = 10
 process_material = SubResource("7")
-texture = ExtResource("2")
+texture = ExtResource("4_2gvwa")
 speed_scale = 2.0
 
 [node name="BotTimer" type="Timer" parent="."]

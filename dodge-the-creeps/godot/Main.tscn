@@ -1,7 +1,9 @@
-[gd_scene load_steps=7 format=3 uid="uid://cyfwty2q3rdse"]
+[gd_scene load_steps=10 format=3 uid="uid://cyfwty2q3rdse"]
 
 [ext_resource type="PackedScene" uid="uid://4vwrqjegqwpj" path="res://Player.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://ccqoreueuxdb7" path="res://Hud.tscn" id="4"]
+[ext_resource type="Texture2D" uid="uid://tdaruwtkjde3" path="res://art/background/background1.png" id="4_bqjkr"]
+[ext_resource type="Texture2D" uid="uid://bvyp4o0r6gubi" path="res://art/background/background2.png" id="5_jgt32"]
 [ext_resource type="AudioStream" uid="uid://dnvlekx2438b7" path="res://art/gameover.wav" id="6"]
 
 [sub_resource type="Curve2D" id="1"]
@@ -18,6 +20,20 @@ sampling_rate = 44100.0
 [sub_resource type="AudioStreamOggVorbis" id="AudioStreamOggVorbis_egk13"]
 packet_sequence = SubResource("OggPacketSequence_16u4r")
 loop = true
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_gg2b2"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_bqjkr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_jgt32")
+}],
+"loop": true,
+"name": &"switch",
+"speed": 5.0
+}]
 
 [node name="Main" type="Main"]
 
@@ -61,6 +77,11 @@ stream = SubResource("AudioStreamOggVorbis_egk13")
 stream = ExtResource("6")
 
 [node name="Stats" type="Stats" parent="."]
+
+[node name="Background" type="AnimatedSprite2D" parent="."]
+position = Vector2(957, 535)
+sprite_frames = SubResource("SpriteFrames_gg2b2")
+animation = &"switch"
 
 [connection signal="safe_mode_shutdown" from="." to="Hud" method="on_stop_button_pressed"]
 [connection signal="hit" from="Player" to="." method="on_hit_count"]

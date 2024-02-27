@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bpvgsg8spgoxh"
-path="res://.godot/imported/enemyFlyingAlt_2.png-31dc7310eda6e1b721224f3cd932c076.ctex"
+uid="uid://m6ubwk2gpymt"
+path="res://.godot/imported/small_complete_crab1right.png-958cc36f5cf3f0874ca04f20fadbbd6f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/enemyFlyingAlt_2.png"
-dest_files=["res://.godot/imported/enemyFlyingAlt_2.png-31dc7310eda6e1b721224f3cd932c076.ctex"]
+source_file="res://art/crab/small_complete_crab1right.png"
+dest_files=["res://.godot/imported/small_complete_crab1right.png-958cc36f5cf3f0874ca04f20fadbbd6f.ctex"]
 
 [params]
 

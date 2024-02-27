@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d30h02h4f7de7"
-path="res://.godot/imported/playerGrey_up1.png-6bd114d0a6beac91f48e3a7314d44564.ctex"
+uid="uid://ceq3l4e8h5emc"
+path="res://.godot/imported/small_complete_crab1up.png-6528a3d0bfb1da030d844362f7086ba8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/playerGrey_up1.png"
-dest_files=["res://.godot/imported/playerGrey_up1.png-6bd114d0a6beac91f48e3a7314d44564.ctex"]
+source_file="res://art/crab/small_complete_crab1up.png"
+dest_files=["res://.godot/imported/small_complete_crab1up.png-6528a3d0bfb1da030d844362f7086ba8.ctex"]
 
 [params]
 

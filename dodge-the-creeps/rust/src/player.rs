@@ -130,10 +130,12 @@ impl Player {
 
                 animated_sprite.set_flip_v(false);
                 animated_sprite.set_flip_h(velocity.x < 0.0)
-            } else {
+            } else if velocity.y < 0.0 {
                 animation = "up";
 
-                animated_sprite.set_flip_v(velocity.y > 0.0)
+                //animated_sprite.set_flip_v(velocity.y > 0.0)
+            } else {
+                animation = "down"
             }
 
             let change = velocity * real::from_f64(delta);
