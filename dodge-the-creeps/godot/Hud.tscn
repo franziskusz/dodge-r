@@ -120,6 +120,16 @@ theme_override_font_sizes/font_size = 41
 text = "bot player: false"
 expand_icon = true
 
+[node name="WeightSwitch" type="CheckButton" parent="."]
+offset_left = 1435.0
+offset_top = 564.0
+offset_right = 1841.0
+offset_bottom = 690.0
+theme_override_fonts/font = ExtResource("1_poxll")
+theme_override_font_sizes/font_size = 41
+text = "add weight: false"
+expand_icon = true
+
 [node name="MobSpawnSlider" type="VSlider" parent="."]
 offset_left = 369.0
 offset_top = 574.0

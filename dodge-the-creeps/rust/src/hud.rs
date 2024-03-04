@@ -6,6 +6,7 @@ use godot::prelude::*;
 pub struct Hud {
     is_safe: bool,
     is_bot_player: bool,
+    has_weight: bool,
     #[base]
     base: Base<CanvasLayer>,
 }
@@ -17,6 +18,9 @@ impl Hud {
 
     #[signal]
     fn stop_game();
+
+    #[signal]
+    fn weight_switch(has_weight: bool);
 
     #[signal]
     fn safe_mode_switch(is_safe: bool);
@@ -108,6 +112,8 @@ impl Hud {
         stop_button.show();
         let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
         safe_mode_switch.hide();
+        let mut weight_switch = self.base().get_node_as::<Button>("WeightSwitch");
+        weight_switch.hide();
         //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
         //mob_spawn_slider.hide();
         //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
@@ -132,6 +138,8 @@ impl Hud {
         start_button.show();
         let mut safe_mode_switch = self.base().get_node_as::<Button>("SafeModeSwitch");
         safe_mode_switch.show();
+        let mut weight_switch = self.base().get_node_as::<Button>("WeightSwitch");
+        weight_switch.show();
         //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
         //mob_spawn_slider.show();
         //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
@@ -152,6 +160,29 @@ impl Hud {
     fn on_message_timer_timeout(&self) {
         let mut message_label = self.base().get_node_as::<Label>("MessageLabel");
         message_label.hide()
+    }
+
+    #[func]
+    fn init_weight_switch(&mut self) {
+        godot_print!("init weight_switch switch");
+        let mut weight_switch = self.base().get_node_as::<CheckButton>("WeightSwitch");
+        weight_switch.connect("pressed".into(), self.base().callable("on_weight_switch"));
+    }
+
+    #[func]
+    fn on_weight_switch(&mut self) {
+        self.has_weight = !self.has_weight;
+        let args = &[self.has_weight.to_variant()];
+
+        self.base_mut().emit_signal("weight_switch".into(), args);
+
+        let mut button = self.base().get_node_as::<CheckButton>("WeightSwitch");
+        let mut button_text: String = "add weight ".to_owned();
+        let mode: &str = &*self.has_weight.to_string();
+
+        button_text.push_str(mode);
+
+        button.set_text(button_text.to_string().into());
     }
 
     #[func]
@@ -297,6 +328,7 @@ impl Hud {
 impl ICanvasLayer for Hud {
     fn init(base: Base<Self::Base>) -> Self {
         Hud {
+            has_weight: false,
             is_safe: true,
             is_bot_player: false,
             base,
@@ -308,5 +340,6 @@ impl ICanvasLayer for Hud {
         self.init_spawn_intervall_slider();
         self.init_bot_player_switch();
         self.init_initial_wave_slider();
+        self.init_weight_switch();
     }
 }

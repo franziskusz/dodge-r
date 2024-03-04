@@ -26,6 +26,7 @@ pub struct Main {
     spawn_intervall_length: i64,
     wave_size: i64,
     initial_wave_size: i64,
+    mob_has_weight: bool,
     #[base]
     base: Base<Node>,
     #[export]
@@ -43,6 +44,9 @@ impl Main {
 
     #[signal]
     fn send_stats(second: i32, mobs_spawned: i64, hits: i64, fps: f64);
+
+    #[signal]
+    fn send_weight(mob_has_weight: bool);
 
     #[func]
     fn game_over(&mut self) {
@@ -247,9 +251,15 @@ impl Main {
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.connect("start_game".into(), mob.callable("on_start_game"));
 
+        self.base_mut()
+            .connect("send_weight".into(), mob.callable("set_weight"));
+        let arg = &[self.mob_has_weight.to_variant()];
+        self.base_mut().emit_signal("send_weight".into(), arg);
+
         self.update_mob_counter(1);
 
         mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
+
         //remove
     }
 
@@ -263,6 +273,12 @@ impl Main {
     fn switch_safe_mode(&mut self, safe_mode: bool) {
         self.is_safe = safe_mode;
         godot_print!("safemode: {}", self.is_safe.to_string());
+    }
+
+    #[func]
+    fn switch_mob_weight(&mut self, has_weight: bool) {
+        self.mob_has_weight = has_weight;
+        godot_print!("mob weight: {}", self.mob_has_weight.to_string());
     }
 
     #[func]
@@ -319,6 +335,7 @@ impl INode for Main {
             wave_size: 0,
             initial_wave_size: 0,
             player_position: Vector2::new(0.0, 0.0),
+            mob_has_weight: false,
             base,
             music: None,
             death_sound: None,
@@ -337,6 +354,11 @@ impl INode for Main {
         hud.connect(
             "safe_mode_switch".into(),
             self.base().callable("switch_safe_mode"),
+        );
+
+        hud.connect(
+            "weight_switch".into(),
+            self.base().callable("switch_mob_weight"),
         );
 
         let mut mob_spawn_slider = self.base().get_node_as::<Slider>("Hud/MobSpawnSlider");

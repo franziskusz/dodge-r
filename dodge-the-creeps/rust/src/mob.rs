@@ -25,6 +25,7 @@ pub struct Mob {
     pub target: Vector2,
     pub aiming_direction: Vector2,  //updatet on moving target
     pub initial_direction: Vector2, //updatet on init and when bouncing off wall
+    pub has_weight: bool,
 
     #[base]
     base: Base<RigidBody2D>,
@@ -34,6 +35,12 @@ pub struct Mob {
 impl Mob {
     #[signal]
     fn despawned();
+
+    #[func]
+    pub fn set_weight(&mut self, has_weight: bool) {
+        self.has_weight = has_weight;
+        //godot_print!("this mob has weight: {}", has_weight)
+    }
 
     #[func]
     fn on_visibility_screen_exited(&mut self) {
@@ -116,6 +123,7 @@ impl IRigidBody2D for Mob {
             target: Vector2::new(0.0, 0.0),
             aiming_direction: Vector2::new(0.0, 0.0),
             initial_direction: Vector2::new(0.0, 0.0),
+            has_weight: false,
             base,
         }
     }
