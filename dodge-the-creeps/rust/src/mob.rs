@@ -108,6 +108,27 @@ impl Mob {
     pub fn on_game_over_despawn(&mut self) {
         self.base_mut().queue_free();
     }
+
+    #[func]
+    fn lift_weight(&mut self) {
+        let radius: f32 = 10.0;
+        let count: i32 = 500;
+        let countf = count as f32;
+        //let position = self.base().get_position();
+        let direction = self.aiming_direction;
+        //let test = self.aiming_direction;
+
+        for n in 0..count {
+            let x = f32::sin(n as f32 / countf * 360.0) * radius;
+            let y = f32::cos(n as f32 / countf * 360.0) * radius;
+            let target = Vector2::new(x, y) * direction / 30.0;
+            self.base_mut().draw_line(
+                Vector2::new(0.0, 0.0),
+                target,
+                Color::from_rgba(0.7, 0.2, 0.0, 0.5),
+            )
+        }
+    }
 }
 
 #[godot_api]
@@ -178,6 +199,16 @@ impl IRigidBody2D for Mob {
         //godot_print!("1. initial target {}", target.to_string()); //debug
 
         self.aim_at_player();
+
+        if self.has_weight == true {
+            self.base_mut().queue_redraw();
+        }
+    }
+
+    fn draw(&mut self) {
+        if self.has_weight == true {
+            self.lift_weight();
+        }
     }
 
     fn physics_process(&mut self, _delta: f64) {
