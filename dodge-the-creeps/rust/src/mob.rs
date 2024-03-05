@@ -204,7 +204,9 @@ impl IRigidBody2D for Mob {
         //godot_print!("1. initial target {}", target.to_string()); //debug
 
         self.aim_at_player();
+    }
 
+    fn process(&mut self, _delta: f64) {
         if self.has_weight == true {
             self.base_mut().queue_redraw();
         }
