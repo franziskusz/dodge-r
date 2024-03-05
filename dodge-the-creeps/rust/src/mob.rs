@@ -26,6 +26,7 @@ pub struct Mob {
     pub aiming_direction: Vector2,  //updatet on moving target
     pub initial_direction: Vector2, //updatet on init and when bouncing off wall
     pub has_weight: bool,
+    weight: f64,
 
     #[base]
     base: Base<RigidBody2D>,
@@ -37,8 +38,9 @@ impl Mob {
     fn despawned();
 
     #[func]
-    pub fn set_weight(&mut self, has_weight: bool) {
+    pub fn set_weight(&mut self, has_weight: bool, weight: f64) {
         self.has_weight = has_weight;
+        self.weight = weight;
         //godot_print!("this mob has weight: {}", has_weight)
     }
 
@@ -109,11 +111,13 @@ impl Mob {
         self.base_mut().queue_free();
     }
 
+    //the following "lift_weight" function is derived from:
+    // https://github.com/extrawurst/godot-rust-benchmark/blob/main/native-lib/src/bench.rs
     #[func]
     fn lift_weight(&mut self) {
         let radius: f32 = 10.0;
-        let count: i32 = 500;
-        let countf = count as f32;
+        let count = self.weight as i32;
+        let countf = self.weight as f32;
         //let position = self.base().get_position();
         let direction = self.aiming_direction;
         //let test = self.aiming_direction;
@@ -145,6 +149,7 @@ impl IRigidBody2D for Mob {
             aiming_direction: Vector2::new(0.0, 0.0),
             initial_direction: Vector2::new(0.0, 0.0),
             has_weight: false,
+            weight: 1.0, //init with not 0 because this is a divisor
             base,
         }
     }

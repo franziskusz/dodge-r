@@ -27,6 +27,7 @@ pub struct Main {
     wave_size: i64,
     initial_wave_size: i64,
     mob_has_weight: bool,
+    mob_weight: f64,
     #[base]
     base: Base<Node>,
     #[export]
@@ -46,7 +47,7 @@ impl Main {
     fn send_stats(second: i32, mobs_spawned: i64, hits: i64, fps: f64);
 
     #[signal]
-    fn send_weight(mob_has_weight: bool);
+    fn send_weight(mob_has_weight: bool, mob_weight: f64);
 
     #[func]
     fn game_over(&mut self) {
@@ -253,8 +254,11 @@ impl Main {
 
         self.base_mut()
             .connect("send_weight".into(), mob.callable("set_weight"));
-        let arg = &[self.mob_has_weight.to_variant()];
-        self.base_mut().emit_signal("send_weight".into(), arg);
+        let args = &[
+            self.mob_has_weight.to_variant(),
+            self.mob_weight.to_variant(),
+        ];
+        self.base_mut().emit_signal("send_weight".into(), args);
 
         self.update_mob_counter(1);
 
@@ -279,6 +283,12 @@ impl Main {
     fn switch_mob_weight(&mut self, has_weight: bool) {
         self.mob_has_weight = has_weight;
         godot_print!("mob weight: {}", self.mob_has_weight.to_string());
+    }
+
+    #[func]
+    pub fn update_mob_weight(&mut self, slider_value: f64) {
+        self.mob_weight = slider_value;
+        godot_print!("mob weight {}", self.mob_weight.to_string()); //debug
     }
 
     #[func]
@@ -336,6 +346,7 @@ impl INode for Main {
             initial_wave_size: 0,
             player_position: Vector2::new(0.0, 0.0),
             mob_has_weight: false,
+            mob_weight: 50.0, //init with not 0 because this is a divisor
             base,
             music: None,
             death_sound: None,
@@ -359,6 +370,12 @@ impl INode for Main {
         hud.connect(
             "weight_switch".into(),
             self.base().callable("switch_mob_weight"),
+        );
+
+        let mut weight_slider = self.base().get_node_as::<Slider>("Hud/WeightSlider");
+        weight_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_mob_weight"),
         );
 
         let mut mob_spawn_slider = self.base().get_node_as::<Slider>("Hud/MobSpawnSlider");

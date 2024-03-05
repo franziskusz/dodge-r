@@ -114,6 +114,8 @@ impl Hud {
         safe_mode_switch.hide();
         let mut weight_switch = self.base().get_node_as::<Button>("WeightSwitch");
         weight_switch.hide();
+        let mut weight_slider = self.base().get_node_as::<Slider>("WeightSlider");
+        weight_slider.hide();
         //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
         //mob_spawn_slider.hide();
         //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
@@ -140,6 +142,10 @@ impl Hud {
         safe_mode_switch.show();
         let mut weight_switch = self.base().get_node_as::<Button>("WeightSwitch");
         weight_switch.show();
+        if self.has_weight == true {
+            let mut weight_slider = self.base().get_node_as::<Slider>("WeightSlider");
+            weight_slider.show();
+        }
         //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
         //mob_spawn_slider.show();
         //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
@@ -172,32 +178,35 @@ impl Hud {
     #[func]
     fn on_weight_switch(&mut self) {
         self.has_weight = !self.has_weight;
-        let args = &[self.has_weight.to_variant()];
 
+        let args = &[self.has_weight.to_variant()];
         self.base_mut().emit_signal("weight_switch".into(), args);
 
         let mut button = self.base().get_node_as::<CheckButton>("WeightSwitch");
         let mut button_text: String = "add weight ".to_owned();
         let mode: &str = &*self.has_weight.to_string();
-
         button_text.push_str(mode);
-
         button.set_text(button_text.to_string().into());
+
+        let mut weight_slider = self.base().get_node_as::<Slider>("WeightSlider");
+        if self.has_weight == true {
+            weight_slider.show();
+        } else {
+            weight_slider.hide();
+        }
     }
 
     #[func]
     fn on_safe_mode_switch(&mut self) {
         self.is_safe = !self.is_safe;
-        let args = &[self.is_safe.to_variant()];
 
+        let args = &[self.is_safe.to_variant()];
         self.base_mut().emit_signal("safe_mode_switch".into(), args);
 
         let mut button = self.base().get_node_as::<CheckButton>("SafeModeSwitch");
         let mut button_text: String = "safe mode: ".to_owned();
         let mode: &str = &*self.is_safe.to_string();
-
         button_text.push_str(mode);
-
         button.set_text(button_text.to_string().into());
     }
 
@@ -214,17 +223,15 @@ impl Hud {
     #[func]
     fn on_bot_player_switch(&mut self) {
         self.is_bot_player = !self.is_bot_player;
-        let args = &[self.is_bot_player.to_variant()];
 
+        let args = &[self.is_bot_player.to_variant()];
         self.base_mut()
             .emit_signal("bot_player_switch".into(), args);
 
         let mut button = self.base().get_node_as::<CheckButton>("BotPlayerSwitch");
         let mut button_text: String = "bot player: ".to_owned();
         let mode: &str = &*self.is_bot_player.to_string();
-
         button_text.push_str(mode);
-
         button.set_text(button_text.to_string().into());
     }
 
@@ -241,7 +248,6 @@ impl Hud {
             "value_changed".into(),
             self.base().callable("update_mob_spawn_label"),
         );
-
         self.update_mob_spawn_label(1.0);
     }
 
@@ -253,8 +259,8 @@ impl Hud {
             .base()
             .get_node_as::<Label>("MobSpawnSlider/SliderLabel");
         let mob_spawns_str: &str = &*mob_spawns.to_string();
-
         label.set_text(mob_spawns_str.into());
+
         let mut slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
         slider.release_focus();
     }
@@ -272,7 +278,6 @@ impl Hud {
             "value_changed".into(),
             self.base().callable("update_spawn_intervall_number_label"),
         );
-
         self.update_spawn_intervall_number_label(1.0);
     }
 
@@ -284,7 +289,6 @@ impl Hud {
             .base()
             .get_node_as::<Label>("SpawnIntervallSlider/SliderNumberLabel");
         let spawn_intervall_str: &str = &*spawn_intervall_length.to_string();
-
         label.set_text(spawn_intervall_str.into());
 
         let mut slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
@@ -316,10 +320,41 @@ impl Hud {
             .base()
             .get_node_as::<Label>("InitialWaveSlider/SliderNumberLabel");
         let initial_wave_str: &str = &*spawn_intervall_length.to_string();
-
         label.set_text(initial_wave_str.into());
 
         let mut slider = self.base().get_node_as::<Slider>("InitialWaveSlider");
+        slider.release_focus();
+    }
+
+    #[func]
+    fn init_weight_slider(&mut self) {
+        godot_print!("init weight slider"); //debug
+        let mut weight_slider = self.base().get_node_as::<Slider>("WeightSlider");
+        weight_slider.set_use_rounded_values(true);
+        weight_slider.set_min(1.0);
+        weight_slider.set_max(1000.0);
+        weight_slider.set_ticks_on_borders(true);
+
+        weight_slider.connect(
+            "value_changed".into(),
+            self.base().callable("update_weight_number_label"),
+        );
+
+        self.update_weight_number_label(50.0);
+        weight_slider.hide();
+    }
+
+    #[func]
+    fn update_weight_number_label(&mut self, slider_value: f64) {
+        let weight = slider_value as i64;
+
+        let mut label = self
+            .base()
+            .get_node_as::<Label>("WeightSlider/SliderNumberLabel");
+        let weight_str: &str = &*weight.to_string();
+        label.set_text(weight_str.into());
+
+        let mut slider = self.base().get_node_as::<Slider>("WeightSlider");
         slider.release_focus();
     }
 }
@@ -341,5 +376,6 @@ impl ICanvasLayer for Hud {
         self.init_bot_player_switch();
         self.init_initial_wave_slider();
         self.init_weight_switch();
+        self.init_weight_slider();
     }
 }
