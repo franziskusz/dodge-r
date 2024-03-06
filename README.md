@@ -1,4 +1,4 @@
-# DodgeR
+# DodgeR (gdext evaluation project)
 
 This is part of a project to evaluate the godot-rust bindings [gdext](https://github.com/godot-rust/gdext).
 
