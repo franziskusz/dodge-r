@@ -346,7 +346,7 @@ impl INode for Main {
             initial_wave_size: 0,
             player_position: Vector2::new(0.0, 0.0),
             mob_has_weight: false,
-            mob_weight: 50.0, //init with not 0 because this is a divisor
+            mob_weight: 1.0, //init with not 0 because this is a divisor
             base,
             music: None,
             death_sound: None,

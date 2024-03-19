@@ -170,7 +170,7 @@ impl Hud {
 
     #[func]
     fn init_weight_switch(&mut self) {
-        godot_print!("init weight_switch switch");
+        godot_print!("init weight switch"); //debug
         let mut weight_switch = self.base().get_node_as::<CheckButton>("WeightSwitch");
         weight_switch.connect("pressed".into(), self.base().callable("on_weight_switch"));
     }
@@ -183,7 +183,7 @@ impl Hud {
         self.base_mut().emit_signal("weight_switch".into(), args);
 
         let mut button = self.base().get_node_as::<CheckButton>("WeightSwitch");
-        let mut button_text: String = "add weight ".to_owned();
+        let mut button_text: String = "add calculations ".to_owned();
         let mode: &str = &*self.has_weight.to_string();
         button_text.push_str(mode);
         button.set_text(button_text.to_string().into());
@@ -340,7 +340,7 @@ impl Hud {
             self.base().callable("update_weight_number_label"),
         );
 
-        self.update_weight_number_label(50.0);
+        self.update_weight_number_label(1.0);
         weight_slider.hide();
     }
 
