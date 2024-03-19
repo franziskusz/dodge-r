@@ -41,6 +41,24 @@ As a result there are now two versions of basically the same game or benchmark a
 
 Both applications write performance logs to timestamped .csv files within the `/app_userdata/` folder. See [godot file paths](https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html) for details.
 
+## Setup
+If the prebuild executables should not work for you, you can build the project from source with the following steps:
+1. [Install Rust](https://doc.rust-lang.org/book/ch01-01-installation.html)
+2. [Download Godot 4.2](https://godotengine.org/download/archive/4.2-stable/)
+3. [Setup gdext](https://godot-rust.github.io/book/intro/setup.html) by making the Godot executable available. Either way by:
+   - putting it in your `PATH` as `godot4`
+   - or as an environment variable called `GODOT4_BIN`, containing the path to the Godot executable.
+4. Clone this repository by opening a shell and entering:
+   - `git clone git@github.com:franziskusz/dodge-r.git` (requires having a ssh key setup)
+   - or `git clone https://github.com/franziskusz/dodge-r.git` 
+5. Change to the just cloned repository directory with `cd dodge-r` (Unix)
+6. Run `cargo build` and `cargo build --release` (this project is configured for performance. A full release build is expected to take over 10 minutes)
+7. Open the `dodge-the-creeps/godot/project.godot` file by double clicking it.
+8. With entering `command b` or clicking the triangle on the top right you can run the project within the editor in debug mode
+9. In the menu select `Project -> Export...` to export the release build
+10. Select `Add..` at the top/center to add a `Preset` for your Operating System (This might require an additional autmatic download)
+11. Select `Export Project` at the bottom and chose a name and target directory, deselect `Export With Debug` and click on `Save`
+
 ## How To Test
 The whole testing process:
 1. Chose scaling settings that suit your need or interest.
@@ -55,7 +73,7 @@ The whole testing process:
 
 ## Notes
 - To dodge (haHAA) breaking changes of the gdext bindings I included a local version within this repository (/gdext/). It is an unmodified Version from early January 2024.
-- As said before, I am new to Godot and Rust. This whole project is also a learning experience for me. If the way some things are implemented gives you headaches, I am sorry. I am open for any kind of criticism.
+- As said before, I am new to Godot and Rust. This whole project is also a learning experience for me. If the way some things are implemented gives you headaches, I apologize. I am open for any kind of criticism.
 - .csv logging is based on the Rust crate [csv](https://crates.io/crates/csv)
 - The additional calculation workload is based on [godot-rust-benchmark](https://github.com/extrawurst/godot-rust-benchmark/tree/main)
 
