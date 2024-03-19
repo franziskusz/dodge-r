@@ -21,7 +21,6 @@ pub struct Mob {
     pub direction: f32,
     pub speed: f32,
     pub velocity: Vector2,
-    //pub is_aiming: bool,
     pub target: Vector2,
     pub aiming_direction: Vector2,  //updatet on moving target
     pub initial_direction: Vector2, //updatet on init and when bouncing off wall
@@ -41,7 +40,7 @@ impl Mob {
     pub fn set_weight(&mut self, has_weight: bool, weight: f64) {
         self.has_weight = has_weight;
         self.weight = weight;
-        //godot_print!("this mob has weight: {}", has_weight)
+        //godot_print!("this mob has weight: {}", has_weight) //debug
     }
 
     #[func]
@@ -87,7 +86,6 @@ impl Mob {
     #[func]
     fn aim_at_player(&mut self) {
         let target = self.target;
-        //self.initial_target = target;
         //godot_print!("2. updatetd target {}", target.to_string()); //debug
 
         self.base_mut().look_at(target);
@@ -100,7 +98,6 @@ impl Mob {
         self.velocity = Vector2::new(self.speed, 0.0).rotated(real::from_f32(direction));
         let velocity = self.velocity;
         self.base_mut().set_linear_velocity(velocity);
-        //self.is_aiming = true;
 
         self.aiming_direction = velocity;
         self.initial_direction = velocity;
@@ -111,8 +108,31 @@ impl Mob {
         self.base_mut().queue_free();
     }
 
-    //the following "lift_weight" function is derived from:
-    // https://github.com/extrawurst/godot-rust-benchmark/blob/main/native-lib/src/bench.rs
+    /*the following "lift_weight" function (lines 136-155) is derived from:
+     * https://github.com/extrawurst/godot-rust-benchmark/blob/main/native-lib/src/bench.rs
+     *
+     * MIT License
+     *
+     * Copyright (c) 2020 Stephan Dilly
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in all
+     * copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+     * SOFTWARE.
+     */
     #[func]
     fn lift_weight(&mut self) {
         let radius: f32 = 10.0;

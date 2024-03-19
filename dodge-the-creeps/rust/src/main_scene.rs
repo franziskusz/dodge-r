@@ -66,7 +66,6 @@ impl Main {
         self.death_sound().play();
 
         //let mut background = self.base().get_node_as::<AnimatedSprite2D>("Background");
-
         //background.stop();
     }
 
@@ -90,12 +89,6 @@ impl Main {
         hud.update_hits(self.hits);
         hud.update_mob_counter_label(self.mob_counter);
 
-        //debug
-        //godot_print!(
-        //    "A start pos, player pos: {},{}",
-        //    start_position.get_position().to_string(),
-        //    self.player_position.to_string(),
-        //);
         self.player_position = start_position.get_position();
         player.bind_mut().start(start_position.get_position());
 
@@ -106,7 +99,6 @@ impl Main {
         self.music().play();
 
         //let mut background = self.base().get_node_as::<AnimatedSprite2D>("Background");
-
         //background.play();
     }
 
@@ -131,15 +123,6 @@ impl Main {
     #[func]
     fn on_score_timer_timeout(&mut self) {
         self.score += 1;
-
-        //let args = &[
-        //    self.score.to_variant(),
-        //    self.mob_counter.to_variant(),
-        //    self.fps.to_variant(),
-        //];
-
-        //self.base_mut().emit_signal("send_stats".into(), args);
-
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_score(self.score);
     }
@@ -152,8 +135,8 @@ impl Main {
         self.frames = 0;
         let mut hud = self.base().get_node_as::<Hud>("Hud");
         hud.bind_mut().update_fps(self.fps);
-        //let fps_string: String = self.fps.to_string();
-        //let mob_counter_string: String = self.mob_counter.to_string();
+        //let fps_string: String = self.fps.to_string(); //debug
+        //let mob_counter_string: String = self.mob_counter.to_string(); //debug
         //godot_print!("mobs, fps: {},{}", mob_counter_string, fps_string); //debug
 
         let args = &[
@@ -209,13 +192,6 @@ impl Main {
             }
             self.wave_size = self.mob_spawns_per_second;
         }
-
-        //let mut j = 0;
-        //while j < self.mob_spawns_per_second {
-        //    j = j + 1;
-
-        //    self.spawn_mob();
-        //}
     }
 
     #[func]
@@ -263,15 +239,7 @@ impl Main {
         self.update_mob_counter(1);
 
         mob.connect("despawned".into(), self.base().callable("on_mob_despawn"));
-
-        //remove
     }
-
-    //#[func]
-    //fn on_mob_despawn(&mut self) {
-    //    self.update_mob_counter(-1);
-    //    self.spawn_mob();
-    //}
 
     #[func]
     fn switch_safe_mode(&mut self, safe_mode: bool) {

@@ -8,7 +8,6 @@ use godot::prelude::*;
 pub struct Player {
     speed: real,
     screen_size: Vector2,
-    //movement_delta: Vector2,
     input_position: Vector2,
     is_bot: bool,
     bot_direction: Vector2,
@@ -174,7 +173,6 @@ impl IArea2D for Player {
         Player {
             speed: 400.0,
             screen_size: Vector2::new(0.0, 0.0),
-            //movement_delta: Vector2::new(0.0, 0.0),
             input_position: Vector2::new(0.0, 0.0),
             position: Vector2::new(0.0, 0.0),
             is_bot: false,

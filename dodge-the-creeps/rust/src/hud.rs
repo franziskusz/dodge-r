@@ -101,7 +101,7 @@ impl Hud {
         label_text.push_str(fps);
 
         label.set_text(label_text.to_string().into());
-        //let fps: godot::engine::Engine.get_frames_per_second();
+        //let fps: godot::engine::Engine.get_frames_per_second(); //only works in debug mode
     }
 
     #[func]
@@ -116,10 +116,6 @@ impl Hud {
         weight_switch.hide();
         let mut weight_slider = self.base().get_node_as::<Slider>("WeightSlider");
         weight_slider.hide();
-        //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
-        //mob_spawn_slider.hide();
-        //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
-        //spawn_intervall_slider.hide();
         let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
         bot_player_switch.hide();
         let mut initial_wave_slider = self.base().get_node_as::<Slider>("InitialWaveSlider");
@@ -146,10 +142,6 @@ impl Hud {
             let mut weight_slider = self.base().get_node_as::<Slider>("WeightSlider");
             weight_slider.show();
         }
-        //let mut mob_spawn_slider = self.base().get_node_as::<Slider>("MobSpawnSlider");
-        //mob_spawn_slider.show();
-        //let mut spawn_intervall_slider = self.base().get_node_as::<Slider>("SpawnIntervallSlider");
-        //spawn_intervall_slider.show();
         let mut bot_player_switch = self.base().get_node_as::<Button>("BotPlayerSwitch");
         bot_player_switch.show();
         let mut initial_wave_slider = self.base().get_node_as::<Slider>("InitialWaveSlider");

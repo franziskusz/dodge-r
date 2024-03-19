@@ -1,6 +1,6 @@
 use crate::hud;
 use crate::main_scene;
-use godot::engine::{performance::Monitor, Performance, ProjectSettings};
+use godot::engine::ProjectSettings;
 use godot::prelude::*;
 use std::time::SystemTime;
 use std::{error::Error, fs, fs::OpenOptions, path::Path, process, str::FromStr};
@@ -10,13 +10,13 @@ use csv;
 #[derive(GodotClass)]
 #[class(base=Node)]
 pub struct Stats {
-    performance: Gd<Performance>,
+    //performance: Gd<Performance>,
     project_setting: Gd<ProjectSettings>,
     second: i64,
     mobs_spawned: i64,
     hits: i64,
     fps: i32,
-    memory_static: f64,
+    //memory_static: f64,
     timestamp_micros: u128,
     file_path: String,
 
@@ -32,21 +32,21 @@ impl Stats {
         self.mobs_spawned = mobs_spawned;
         self.hits = hits;
         self.fps = fps as i32;
-        let memory_monitor: Monitor = Monitor::MEMORY_STATIC; //TODO remove memory tracking alltogether since its beeing tracked in the system-monitor
-        self.memory_static = self.performance.get_monitor(memory_monitor);
+        //let memory_monitor: Monitor = Monitor::MEMORY_STATIC; //TODO remove memory tracking alltogether since its beeing tracked in the system-monitor
+        //self.memory_static = self.performance.get_monitor(memory_monitor);
         let duration_since_epoch = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap();
         self.timestamp_micros = duration_since_epoch.as_micros();
 
         godot_print!(
-            "ts, second, mobs, hits, fps, memory {},{},{},{},{},{}",
+            "ts, second, mobs, hits, fps, memory {},{},{},{},{}",
             self.timestamp_micros.to_string(),
             self.second.to_string(),
             self.mobs_spawned.to_string(),
             self.hits.to_string(),
             self.fps.to_string(),
-            self.memory_static.to_string()
+            //self.memory_static.to_string()
         ); //debug
 
         // call write_to_csv()
@@ -96,7 +96,6 @@ impl Stats {
 
         writer.flush()?;
         Ok(())
-        //write local vars to csv file
     }
 
     fn make_stats_dir_if_not_exists(&mut self) -> Result<(), Box<dyn Error>> {
@@ -133,13 +132,13 @@ impl Stats {
 impl INode for Stats {
     fn init(base: Base<Node>) -> Self {
         Stats {
-            performance: Performance::singleton(),
+            //performance: Performance::singleton(),
             project_setting: ProjectSettings::singleton(),
             second: 0,
             mobs_spawned: 0,
             hits: 0,
             fps: 0,
-            memory_static: 0.0,
+            //memory_static: 0.0,
             timestamp_micros: 0,
             file_path: String::from(""),
             base,
