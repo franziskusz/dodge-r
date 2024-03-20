@@ -20,7 +20,7 @@ The evaluation project consists of four Repositories:
 - [python-pandas-plotter](https://github.com/franziskusz/pandas-plotter)
 
 ## Setup
-If the prebuild executables should not work for you, you can build the project from source with the following steps:
+If the [prebuild executables](https://github.com/franziskusz/dodge-r/releases/tag/v0.1.0-alpha) [should not work for you](https://github.com/franziskusz/dodge-r/issues/1), you can build the project from source with the following steps:
 1. [Install Rust](https://doc.rust-lang.org/book/ch01-01-installation.html)
 2. [Download Godot 4.2](https://godotengine.org/download/archive/4.2-stable/)
 3. [Setup gdext](https://godot-rust.github.io/book/intro/setup.html) by making the Godot executable available. Either way by:
