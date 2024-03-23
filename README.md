@@ -20,6 +20,8 @@ The evaluation project consists of four Repositories:
 - [python-pandas-plotter](https://github.com/franziskusz/pandas-plotter)
 
 ## Setup
+- Installing [Support for the Vulkan Renderer](https://www.vulkan.org/tools#vulkan-gpu-resources) might be required.
+
 If the [prebuild executables](https://github.com/franziskusz/dodge-r/releases/tag/v0.1.0-alpha) [should not work for you](https://github.com/franziskusz/dodge-r/issues/1), you can build the project from source with the following steps:
 1. [Install Rust](https://doc.rust-lang.org/book/ch01-01-installation.html)
 2. [Download Godot 4.2](https://godotengine.org/download/archive/4.2-stable/)
